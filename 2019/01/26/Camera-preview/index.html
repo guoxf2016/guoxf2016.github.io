@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Camera preview本文主要分析Camera1的preview流程，基于Android8.x。 API调用在调用Camera.open打开相机获得Camera对象后，需要设置预览SurfaceHolder。 12mCamera.setPreviewDisplay(holder);mCamera.startPreview(); 代码追踪setPreviewDisplay会调用到一个nativ">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera-preview">
+<meta property="og:url" content="http://example.com/2019/01/26/Camera-preview/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="Camera preview本文主要分析Camera1的preview流程，基于Android8.x。 API调用在调用Camera.open打开相机获得Camera对象后，需要设置预览SurfaceHolder。 12mCamera.setPreviewDisplay(holder);mCamera.startPreview(); 代码追踪setPreviewDisplay会调用到一个nativ">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-01-26T12:51:54.000Z">
+<meta property="article:modified_time" content="2019-01-26T17:57:35.179Z">
+<meta property="article:author" content="Guo Xf">
+<meta property="article:tag" content="Android，camera">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2019/01/26/Camera-preview/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2019/01/26/Camera-preview/","path":"2019/01/26/Camera-preview/","title":"Camera-preview"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera-preview | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Camera-preview"><span class="nav-number">1.</span> <span class="nav-text">Camera preview</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#API%E8%B0%83%E7%94%A8"><span class="nav-number">1.1.</span> <span class="nav-text">API调用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.2.</span> <span class="nav-text">代码追踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/01/26/Camera-preview/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera-preview | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera-preview
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+
+      <time title="أُنشأ: 2019-01-26 20:51:54" itemprop="dateCreated datePublished" datetime="2019-01-26T20:51:54+08:00">2019-01-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">عُدل في</span>
+      <time title="عُدل: 2019-01-27 01:57:35" itemprop="dateModified" datetime="2019-01-27T01:57:35+08:00">2019-01-27</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="Camera-preview"><a href="#Camera-preview" class="headerlink" title="Camera preview"></a>Camera preview</h2><p>本文主要分析Camera1的preview流程，基于Android8.x。</p>
+<h3 id="API调用"><a href="#API调用" class="headerlink" title="API调用"></a>API调用</h3><p>在调用Camera.open打开相机获得Camera对象后，需要设置预览SurfaceHolder。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mCamera.setPreviewDisplay(holder);</span><br><span class="line">mCamera.startPreview();</span><br></pre></td></tr></table></figure>
+<h3 id="代码追踪"><a href="#代码追踪" class="headerlink" title="代码追踪"></a>代码追踪</h3><p>setPreviewDisplay会调用到一个native方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">setPreviewSurface</span><span class="params">(Surface surface)</span> <span class="keyword">throws</span> IOException;</span><br></pre></td></tr></table></figure>
+<p>jni层对应的cpp文件是frameworks\base\core\jni\android_hardware_Camera.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">void</span> <span class="title">android_hardware_Camera_setPreviewSurface</span><span class="params">(JNIEnv *env, jobject thiz, jobject jSurface)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    sp&lt;Camera&gt; camera = <span class="built_in">get_native_camera</span>(env, thiz, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="comment">//这里是从之前openCamera得到的Camera对象，保存在JNICameraContext里面</span></span><br><span class="line">    <span class="keyword">if</span> (camera == <span class="number">0</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    sp&lt;IGraphicBufferProducer&gt; gbp;</span><br><span class="line">    sp&lt;Surface&gt; surface;</span><br><span class="line">    <span class="keyword">if</span> (jSurface) &#123;</span><br><span class="line">        surface = <span class="built_in">android_view_Surface_getSurface</span>(env, jSurface);</span><br><span class="line">        <span class="comment">//将jave层的Surface转换成native层的Surface</span></span><br><span class="line">        <span class="keyword">if</span> (surface != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            gbp = surface-&gt;<span class="built_in">getIGraphicBufferProducer</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (camera-&gt;<span class="built_in">setPreviewTarget</span>(gbp) != NO_ERROR) &#123;</span><br><span class="line">        <span class="built_in">jniThrowException</span>(env, <span class="string">&quot;java/io/IOException&quot;</span>, <span class="string">&quot;setPreviewTexture failed&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关于IGraphicBufferProducer</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * This class defines the Binder IPC interface for the producer side of</span></span><br><span class="line"><span class="comment"> * a queue of graphics buffers.  It&#x27;s used to send graphics data from one</span></span><br><span class="line"><span class="comment"> * component to another.  For example, a class that decodes video for</span></span><br><span class="line"><span class="comment"> * playback might use this to provide frames.  This is typically done</span></span><br><span class="line"><span class="comment"> * indirectly, through Surface.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The underlying mechanism is a BufferQueue, which implements</span></span><br><span class="line"><span class="comment"> * BnGraphicBufferProducer.  In normal operation, the producer calls</span></span><br><span class="line"><span class="comment"> * dequeueBuffer() to get an empty buffer, fills it with data, then</span></span><br><span class="line"><span class="comment"> * calls queueBuffer() to make it available to the consumer.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This class was previously called ISurfaceTexture.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">IGraphicBufferProducer</span> : <span class="keyword">public</span> IInterface</span><br></pre></td></tr></table></figure>
+
+<p>我们先看camera的setPreviewTarget，代码路径在frameworks\av\camera\Camera.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// pass the buffered IGraphicBufferProducer to the camera service</span></span><br><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera::setPreviewTarget</span><span class="params">(<span class="type">const</span> sp&lt;IGraphicBufferProducer&gt;&amp; bufferProducer)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    sp &lt;::android::hardware::ICamera&gt; c = mCamera;</span><br><span class="line">    <span class="comment">//mCamera是之前connect CameraServer得到的应该是BpCamera</span></span><br><span class="line">    <span class="keyword">return</span> c-&gt;<span class="built_in">setPreviewTarget</span>(bufferProducer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们直接看Bn端的实现，因为我们用的API1，所以之前connect在服务端创建的是Camera2Client.<br>代码在\frameworks\av\services\camera\libcameraservice\api1\Camera2Client.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera2Client::setPreviewTarget</span><span class="params">(</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="type">const</span> sp&lt;IGraphicBufferProducer&gt;&amp; bufferProducer)</span> </span>&#123;</span><br><span class="line">    <span class="function">Mutex::Autolock <span class="title">icl</span><span class="params">(mBinderSerializationLock)</span></span>;</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line">    <span class="keyword">if</span> ( (res = <span class="built_in">checkPid</span>(__FUNCTION__) ) != OK) <span class="keyword">return</span> res;</span><br><span class="line"></span><br><span class="line">    sp&lt;IBinder&gt; binder;</span><br><span class="line">    sp&lt;Surface&gt; window;</span><br><span class="line">    <span class="keyword">if</span> (bufferProducer != <span class="number">0</span>) &#123;</span><br><span class="line">        binder = IInterface::<span class="built_in">asBinder</span>(bufferProducer);</span><br><span class="line">        <span class="comment">// Using controlledByApp flag to ensure that the buffer queue remains in</span></span><br><span class="line">        <span class="comment">// async mode for the old camera API, where many applications depend</span></span><br><span class="line">        <span class="comment">// on that behavior.</span></span><br><span class="line">        window = <span class="keyword">new</span> <span class="built_in">Surface</span>(bufferProducer, <span class="comment">/*controlledByApp*/</span> <span class="literal">true</span>);</span><br><span class="line">        <span class="comment">//使用bufferProducer重新new一个Surface</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">setPreviewWindowL</span>(binder, window);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera2Client::setPreviewWindowL</span><span class="params">(<span class="type">const</span> sp&lt;IBinder&gt;&amp; binder,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="type">const</span> sp&lt;Surface&gt;&amp; window)</span> </span>&#123;</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line"></span><br><span class="line">    mPreviewSurface = binder;</span><br><span class="line">    res = mStreamingProcessor-&gt;<span class="built_in">setPreviewWindow</span>(window);</span><br><span class="line">	<span class="comment">//mStreamingProcessor是在Camera2Client初始化是创建的</span></span><br><span class="line">    <span class="keyword">if</span> (state == Parameters::WAITING_FOR_PREVIEW_WINDOW) &#123;</span><br><span class="line">        <span class="function">SharedParameters::Lock <span class="title">l</span><span class="params">(mParameters)</span></span>;</span><br><span class="line">        l.mParameters.state = state;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">startPreviewL</span>(l.mParameters, <span class="literal">false</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>frameworks\av\services\camera\libcameraservice\api1\client2\StreamingProcessor.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">StreamingProcessor::setPreviewWindow</span><span class="params">(<span class="type">const</span> sp&lt;Surface&gt;&amp; window)</span> </span>&#123;</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line">    <span class="function">Mutex::Autolock <span class="title">m</span><span class="params">(mMutex)</span></span>;</span><br><span class="line">    mPreviewWindow = window;<span class="comment">//保存surface</span></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>setPreviewTarget就是将Surface传递到StreamingProcessor，当然是有跨进程在的，并不是直接传递。</p>
+<p>接下来，我们看一下startPreivew。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">native</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">startPreview</span><span class="params">()</span>;</span><br></pre></td></tr></table></figure>
+<p>是一个native方法，对应的jni在frameworks\base\core\jni\android_hardware_Camera.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">void</span> <span class="title">android_hardware_Camera_startPreview</span><span class="params">(JNIEnv *env, jobject thiz)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    sp&lt;Camera&gt; camera = <span class="built_in">get_native_camera</span>(env, thiz, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="comment">//同样是从JNICameraContext拿到Camera对象</span></span><br><span class="line">    <span class="keyword">if</span> (camera == <span class="number">0</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (camera-&gt;<span class="built_in">startPreview</span>() != NO_ERROR) &#123;</span><br><span class="line">        <span class="built_in">jniThrowRuntimeException</span>(env, <span class="string">&quot;startPreview failed&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// start preview mode</span></span><br><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera::startPreview</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">ALOGV</span>(<span class="string">&quot;startPreview&quot;</span>);</span><br><span class="line">    sp &lt;::android::hardware::ICamera&gt; c = mCamera;</span><br><span class="line">    <span class="keyword">if</span> (c == <span class="number">0</span>) <span class="keyword">return</span> NO_INIT;</span><br><span class="line">    <span class="comment">//同样是调用ICamera的Bp端</span></span><br><span class="line">    <span class="keyword">return</span> c-&gt;<span class="built_in">startPreview</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Bn端的实现还是在Camera2Client</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera2Client::startPreview</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="function">Mutex::Autolock <span class="title">icl</span><span class="params">(mBinderSerializationLock)</span></span>;</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line">    <span class="keyword">if</span> ( (res = <span class="built_in">checkPid</span>(__FUNCTION__) ) != OK) <span class="keyword">return</span> res;</span><br><span class="line">    <span class="function">SharedParameters::Lock <span class="title">l</span><span class="params">(mParameters)</span></span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">startPreviewL</span>(l.mParameters, <span class="literal">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera2Client::startPreviewL</span><span class="params">(Parameters &amp;params, <span class="type">bool</span> restart)</span> </span>&#123;</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line"></span><br><span class="line">    params.state = Parameters::STOPPED;</span><br><span class="line">    <span class="type">int</span> lastPreviewStreamId = mStreamingProcessor-&gt;<span class="built_in">getPreviewStreamId</span>();</span><br><span class="line"></span><br><span class="line">    res = mStreamingProcessor-&gt;<span class="built_in">updatePreviewStream</span>(params);</span><br><span class="line">	<span class="comment">//StreamingProcessor的updatePreviewStream会调用Device的createStream函数</span></span><br><span class="line">	<span class="comment">//createStream函数中会创建Camera3OutputStream</span></span><br><span class="line">    <span class="type">bool</span> previewStreamChanged = mStreamingProcessor-&gt;<span class="built_in">getPreviewStreamId</span>() != lastPreviewStreamId;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (callbacksEnabled) &#123;</span><br><span class="line"></span><br><span class="line">        res = mCallbackProcessor-&gt;<span class="built_in">updateStream</span>(params);</span><br><span class="line"></span><br><span class="line">        outputStreams.<span class="built_in">push</span>(<span class="built_in">getCallbackStreamId</span>());</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (previewStreamChanged &amp;&amp; mCallbackProcessor-&gt;<span class="built_in">getStreamId</span>() != NO_STREAM) &#123;</span><br><span class="line">    &#125;</span><br><span class="line">    outputStreams.<span class="built_in">push</span>(<span class="built_in">getPreviewStreamId</span>());</span><br><span class="line"><span class="keyword">if</span> (!params.recordingHint) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!restart) &#123;</span><br><span class="line">            res = mStreamingProcessor-&gt;<span class="built_in">updatePreviewRequest</span>(params);</span><br><span class="line">            <span class="comment">//updatePreviewRequest会调用device的createDefaultRequest</span></span><br><span class="line">        &#125;</span><br><span class="line">        res = mStreamingProcessor-&gt;<span class="built_in">startStream</span>(StreamingProcessor::PREVIEW,</span><br><span class="line">                outputStreams);</span><br><span class="line">                <span class="comment">//这个会调用device的setStreamingRequest，将上面创建的request通过device提交给hal</span></span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!restart) &#123;</span><br><span class="line">            res = mStreamingProcessor-&gt;<span class="built_in">updateRecordingRequest</span>(params);</span><br><span class="line">           </span><br><span class="line">        &#125;</span><br><span class="line">        res = mStreamingProcessor-&gt;<span class="built_in">startStream</span>(StreamingProcessor::RECORD,</span><br><span class="line">                outputStreams);</span><br><span class="line">    &#125;</span><br><span class="line">、</span><br><span class="line"></span><br><span class="line">    params.state = Parameters::PREVIEW;</span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们跳过跟hal层的复杂的交互，看看Callback是怎么回调的。</p>
+<p>直接看看CallbackProcessor::processNewCallback，经过一系列的判断会将数据放在buffer，然后调用</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">l.mRemoteCallback-&gt;<span class="built_in">dataCallback</span>(CAMERA_MSG_PREVIEW_FRAME,</span><br><span class="line">                    callbackHeap-&gt;mBuffers[heapIdx], <span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure>
+<p>实际上这里会调用ICameraClient的接口dataCallback，这里调用的是Bp端，而Bn端就是一开始setupCamera的时候创建的Camera</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// callback from camera service when frame or image is ready</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Camera::dataCallback</span><span class="params">(<span class="type">int32_t</span> msgType, <span class="type">const</span> sp&lt;IMemory&gt;&amp; dataPtr,</span></span></span><br><span class="line"><span class="params"><span class="function">                          <span class="type">camera_frame_metadata_t</span> *metadata)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    sp&lt;CameraListener&gt; listener;</span><br><span class="line">    &#123;</span><br><span class="line">        Mutex::Autolock _l(mLock);</span><br><span class="line">        listener = mListener;</span><br><span class="line">        <span class="comment">//mListenr也是一开始setup的是设置的，就是JNICameraContext</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (listener != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        listener-&gt;<span class="built_in">postData</span>(msgType, dataPtr, metadata);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">JNICameraContext::postData</span><span class="params">(<span class="type">int32_t</span> msgType, <span class="type">const</span> sp&lt;IMemory&gt;&amp; dataPtr,</span></span></span><br><span class="line"><span class="params"><span class="function">                                <span class="type">camera_frame_metadata_t</span> *metadata)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">int32_t</span> dataMsgType = msgType &amp; ~CAMERA_MSG_PREVIEW_METADATA;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// return data based on callback type</span></span><br><span class="line">    <span class="keyword">switch</span> (dataMsgType) &#123;</span><br><span class="line">        <span class="keyword">case</span> CAMERA_MSG_VIDEO_FRAME:</span><br><span class="line">            <span class="comment">// should never happen</span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// For backward-compatibility purpose, if there is no callback</span></span><br><span class="line">        <span class="comment">// buffer for raw image, the callback returns null.</span></span><br><span class="line">        <span class="keyword">case</span> CAMERA_MSG_RAW_IMAGE:</span><br><span class="line">            <span class="built_in">ALOGV</span>(<span class="string">&quot;rawCallback&quot;</span>);</span><br><span class="line">            <span class="keyword">if</span> (mRawImageCallbackBuffers.<span class="built_in">isEmpty</span>()) &#123;</span><br><span class="line">                env-&gt;<span class="built_in">CallStaticVoidMethod</span>(mCameraJClass, fields.post_event,</span><br><span class="line">                        mCameraJObjectWeak, dataMsgType, <span class="number">0</span>, <span class="number">0</span>, <span class="literal">NULL</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="built_in">copyAndPost</span>(env, dataPtr, dataMsgType);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// There is no data.</span></span><br><span class="line">        <span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">		<span class="comment">//CAMERA_MSG_PREVIEW_FRAME</span></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="built_in">ALOGV</span>(<span class="string">&quot;dataCallback(%d, %p)&quot;</span>, dataMsgType, dataPtr.<span class="built_in">get</span>());</span><br><span class="line">            <span class="built_in">copyAndPost</span>(env, dataPtr, dataMsgType);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// post frame metadata to Java//metadata 是NULL</span></span><br><span class="line">    <span class="keyword">if</span> (metadata &amp;&amp; (msgType &amp; CAMERA_MSG_PREVIEW_METADATA)) &#123;</span><br><span class="line">        <span class="built_in">postMetadata</span>(env, CAMERA_MSG_PREVIEW_METADATA, metadata);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">JNICameraContext::copyAndPost</span><span class="params">(JNIEnv* env, <span class="type">const</span> sp&lt;IMemory&gt;&amp; dataPtr, <span class="type">int</span> msgType)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    jbyteArray obj = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// allocate Java byte array and copy data</span></span><br><span class="line">    <span class="keyword">if</span> (dataPtr != <span class="literal">NULL</span>) &#123;</span><br><span class="line">        <span class="type">ssize_t</span> offset;</span><br><span class="line">        <span class="type">size_t</span> size;</span><br><span class="line">        sp&lt;IMemoryHeap&gt; heap = dataPtr-&gt;<span class="built_in">getMemory</span>(&amp;offset, &amp;size);</span><br><span class="line">        <span class="built_in">ALOGV</span>(<span class="string">&quot;copyAndPost: off=%zd, size=%zu&quot;</span>, offset, size);</span><br><span class="line">        <span class="type">uint8_t</span> *heapBase = (<span class="type">uint8_t</span>*)heap-&gt;<span class="built_in">base</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (heapBase != <span class="literal">NULL</span>) &#123;</span><br><span class="line">            <span class="type">const</span> jbyte* data = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">const</span> jbyte*&gt;(heapBase + offset);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (msgType == CAMERA_MSG_RAW_IMAGE) &#123;</span><br><span class="line">                obj = <span class="built_in">getCallbackBuffer</span>(env, &amp;mRawImageCallbackBuffers, size);</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (msgType == CAMERA_MSG_PREVIEW_FRAME &amp;&amp; mManualBufferMode) &#123;</span><br><span class="line">                obj = <span class="built_in">getCallbackBuffer</span>(env, &amp;mCallbackBuffers, size);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (mCallbackBuffers.<span class="built_in">isEmpty</span>()) &#123;</span><br><span class="line">                    <span class="built_in">ALOGV</span>(<span class="string">&quot;Out of buffers, clearing callback!&quot;</span>);</span><br><span class="line">                    mCamera-&gt;<span class="built_in">setPreviewCallbackFlags</span>(CAMERA_FRAME_CALLBACK_FLAG_NOOP);</span><br><span class="line">                    mManualCameraCallbackSet = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (obj == <span class="literal">NULL</span>) &#123;</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="built_in">ALOGV</span>(<span class="string">&quot;Allocating callback buffer&quot;</span>);</span><br><span class="line">                obj = env-&gt;<span class="built_in">NewByteArray</span>(size);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (obj == <span class="literal">NULL</span>) &#123;</span><br><span class="line">                <span class="built_in">ALOGE</span>(<span class="string">&quot;Couldn&#x27;t allocate byte array for JPEG data&quot;</span>);</span><br><span class="line">                env-&gt;<span class="built_in">ExceptionClear</span>();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                env-&gt;<span class="built_in">SetByteArrayRegion</span>(obj, <span class="number">0</span>, size, data);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">ALOGE</span>(<span class="string">&quot;image heap is NULL&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// post image data to Java</span></span><br><span class="line">    env-&gt;<span class="built_in">CallStaticVoidMethod</span>(mCameraJClass, fields.post_event,</span><br><span class="line">            mCameraJObjectWeak, msgType, <span class="number">0</span>, <span class="number">0</span>, obj);</span><br><span class="line">    <span class="keyword">if</span> (obj) &#123;</span><br><span class="line">        env-&gt;<span class="built_in">DeleteLocalRef</span>(obj);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fields.post_event = <span class="built_in">GetStaticMethodIDOrDie</span>(env, clazz, <span class="string">&quot;postEventFromNative&quot;</span>,</span><br><span class="line">                                               <span class="string">&quot;(Ljava/lang/Object;IIILjava/lang/Object;)V&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>上面的操作就是将数据从IMemory中取出转成javaByte数组，在调用Java层的postEventFromNative方法将数据和msgType传递到java层。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">postEventFromNative</span><span class="params">(Object camera_ref,</span></span><br><span class="line"><span class="params">                                        <span class="type">int</span> what, <span class="type">int</span> arg1, <span class="type">int</span> arg2, Object obj)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">Camera</span> <span class="variable">c</span> <span class="operator">=</span> (Camera)((WeakReference)camera_ref).get();</span><br><span class="line">    <span class="keyword">if</span> (c == <span class="literal">null</span>)</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (c.mEventHandler != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="type">Message</span> <span class="variable">m</span> <span class="operator">=</span> c.mEventHandler.obtainMessage(what, arg1, arg2, obj);</span><br><span class="line">        c.mEventHandler.sendMessage(m);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>java层通过EventHandler发送消息，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">case</span> CAMERA_MSG_PREVIEW_FRAME:</span><br><span class="line">                <span class="type">PreviewCallback</span> <span class="variable">pCb</span> <span class="operator">=</span> mPreviewCallback;</span><br><span class="line">                <span class="keyword">if</span> (pCb != <span class="literal">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (mOneShot) &#123;</span><br><span class="line">                        <span class="comment">// Clear the callback variable before the callback</span></span><br><span class="line">                        <span class="comment">// in case the app calls setPreviewCallback from</span></span><br><span class="line">                        <span class="comment">// the callback function</span></span><br><span class="line">                        mPreviewCallback = <span class="literal">null</span>;</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!mWithBuffer) &#123;</span><br><span class="line">                        <span class="comment">// We&#x27;re faking the camera preview mode to prevent</span></span><br><span class="line">                        <span class="comment">// the app from being flooded with preview frames.</span></span><br><span class="line">                        <span class="comment">// Set to oneshot mode again.</span></span><br><span class="line">                        setHasPreviewCallback(<span class="literal">true</span>, <span class="literal">false</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//这里就看到我们的onPreviewFrame回调被调用了</span></span><br><span class="line">                    pCb.onPreviewFrame((<span class="type">byte</span>[])msg.obj, mCamera);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>Camera1的preview主要有三点，一是设置Surface，用来显示预览画面，二是startPreview，这个过程会通过CameraServer到Hal层，创建请求，提交请求，主要逻辑在StreamProcessor中。最后是预览数据的回调，CallbackProcessor处理回调数据通过ICameraClient将数据传递到应用进程，最终回调到上层。总的来讲，Device的createStream，createDefaultRequest，setStreamingRequest，涉及到跟HAL层的交互，比较复杂，但是应用进程和CameraServer的交互还是比较清晰的。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Android%EF%BC%8Ccamera/" rel="tag"># Android，camera</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/01/13/Camera-open/" rel="prev" title="Camera open">
+                  <i class="fa fa-angle-left"></i> Camera open
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/02/16/Camera-Service%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="next" title="Camera Service源码分析">
+                  Camera Service源码分析 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

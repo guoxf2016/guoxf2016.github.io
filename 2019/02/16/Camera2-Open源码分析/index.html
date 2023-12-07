@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Camera2 Open引言本文主要分析Camera2 的open流程，代码基于Android8.x 代码追踪首先看CameraManager的openCamera方法，代码在frameworks&#x2F;base&#x2F;core&#x2F;java&#x2F;android&#x2F;hardware&#x2F;camera2&#x2F;CameraManager.java 1234567">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera2 Open源码分析">
+<meta property="og:url" content="http://example.com/2019/02/16/Camera2-Open%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="Camera2 Open引言本文主要分析Camera2 的open流程，代码基于Android8.x 代码追踪首先看CameraManager的openCamera方法，代码在frameworks&#x2F;base&#x2F;core&#x2F;java&#x2F;android&#x2F;hardware&#x2F;camera2&#x2F;CameraManager.java 1234567">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-02-16T10:53:15.000Z">
+<meta property="article:modified_time" content="2019-02-16T10:54:16.104Z">
+<meta property="article:author" content="Guo Xf">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2019/02/16/Camera2-Open%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2019/02/16/Camera2-Open%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/","path":"2019/02/16/Camera2-Open源码分析/","title":"Camera2 Open源码分析"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera2 Open源码分析 | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Camera2-Open"><span class="nav-number">1.</span> <span class="nav-text">Camera2 Open</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E8%BF%BD%E8%B8%AA"><span class="nav-number">1.2.</span> <span class="nav-text">代码追踪</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">1.3.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/02/16/Camera2-Open%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera2 Open源码分析 | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera2 Open源码分析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2019-02-16 18:53:15 / عُدل: 18:54:16" itemprop="dateCreated datePublished" datetime="2019-02-16T18:53:15+08:00">2019-02-16</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="Camera2-Open"><a href="#Camera2-Open" class="headerlink" title="Camera2 Open"></a>Camera2 Open</h2><h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>本文主要分析Camera2 的open流程，代码基于Android8.x</p>
+<h3 id="代码追踪"><a href="#代码追踪" class="headerlink" title="代码追踪"></a>代码追踪</h3><p>首先看CameraManager的openCamera方法，代码在frameworks&#x2F;base&#x2F;core&#x2F;java&#x2F;android&#x2F;hardware&#x2F;camera2&#x2F;CameraManager.java</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RequiresPermission(android.Manifest.permission.CAMERA)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">openCamera</span><span class="params">(<span class="meta">@NonNull</span> String cameraId,</span></span><br><span class="line"><span class="params">        <span class="meta">@NonNull</span> <span class="keyword">final</span> CameraDevice.StateCallback callback, <span class="meta">@Nullable</span> Handler handler)</span></span><br><span class="line">        <span class="keyword">throws</span> CameraAccessException &#123;</span><br><span class="line"></span><br><span class="line">    openCameraForUid(cameraId, callback, handler, USE_CALLING_UID);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>传入了3个参数，分别是cameraId，StateCallback，和一个Handler。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">openCameraForUid</span><span class="params">(<span class="meta">@NonNull</span> String cameraId,</span></span><br><span class="line"><span class="params">            <span class="meta">@NonNull</span> <span class="keyword">final</span> CameraDevice.StateCallback callback, <span class="meta">@Nullable</span> Handler handler,</span></span><br><span class="line"><span class="params">            <span class="type">int</span> clientUid)</span></span><br><span class="line">            <span class="keyword">throws</span> CameraAccessException &#123;</span><br><span class="line">        <span class="comment">//省略部分代码</span></span><br><span class="line">        openCameraDeviceUserAsync(cameraId, callback, handler, clientUid);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> CameraDevice <span class="title function_">openCameraDeviceUserAsync</span><span class="params">(String cameraId,</span></span><br><span class="line"><span class="params">            CameraDevice.StateCallback callback, Handler handler, <span class="keyword">final</span> <span class="type">int</span> uid)</span></span><br><span class="line">            <span class="keyword">throws</span> CameraAccessException &#123;</span><br><span class="line">        <span class="type">CameraCharacteristics</span> <span class="variable">characteristics</span> <span class="operator">=</span> getCameraCharacteristics(cameraId);</span><br><span class="line">        <span class="type">CameraDevice</span> <span class="variable">device</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">synchronized</span> (mLock) &#123;</span><br><span class="line">            <span class="comment">//ICameraDeviceUser定义了Camera应用和CameraServer进程IPC的接口</span></span><br><span class="line">            <span class="comment">//Camera应用是Client，CameraServer是Service</span></span><br><span class="line">            <span class="type">ICameraDeviceUser</span> <span class="variable">cameraUser</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">            android.hardware.camera2.impl.<span class="type">CameraDeviceImpl</span> <span class="variable">deviceImpl</span> <span class="operator">=</span></span><br><span class="line">                    <span class="keyword">new</span> <span class="title class_">android</span>.hardware.camera2.impl.CameraDeviceImpl(</span><br><span class="line">                        cameraId,</span><br><span class="line">                        callback,</span><br><span class="line">                        handler,</span><br><span class="line">                        characteristics,</span><br><span class="line">                        mContext.getApplicationInfo().targetSdkVersion);</span><br><span class="line">            <span class="comment">//ICameraDeviceCallbacks同样也是IPC接口，不同的是</span></span><br><span class="line">            <span class="comment">//Camera应用是Service，CameraServer是Client</span></span><br><span class="line">            <span class="type">ICameraDeviceCallbacks</span> <span class="variable">callbacks</span> <span class="operator">=</span> deviceImpl.getCallbacks();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> (supportsCamera2ApiLocked(cameraId)) &#123;<span class="comment">//最新的hal支持Camera2 api</span></span><br><span class="line">                    <span class="comment">// Use cameraservice&#x27;s cameradeviceclient implementation for HAL3.2+ devices</span></span><br><span class="line">                    <span class="type">ICameraService</span> <span class="variable">cameraService</span> <span class="operator">=</span> CameraManagerGlobal.get().getCameraService();</span><br><span class="line">                    <span class="comment">//跨进程调用，CameraService会调用makeClient打开设备</span></span><br><span class="line">                    <span class="comment">//这里还把callbacks传下去了</span></span><br><span class="line">                    cameraUser = cameraService.connectDevice(callbacks, cameraId,</span><br><span class="line">                            mContext.getOpPackageName(), uid);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// Use legacy camera implementation for HAL1 devices</span></span><br><span class="line">                    <span class="type">int</span> id;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        id = Integer.parseInt(cameraId);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (NumberFormatException e) &#123;</span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Expected cameraId to be numeric, but it was: &quot;</span></span><br><span class="line">                                + cameraId);</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    Log.i(TAG, <span class="string">&quot;Using legacy camera HAL.&quot;</span>);</span><br><span class="line">                    cameraUser = CameraDeviceUserShim.connectBinderShim(callbacks, id);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; </span><br><span class="line"></span><br><span class="line">            <span class="comment">// <span class="doctag">TODO:</span> factor out callback to be non-nested, then move setter to constructor</span></span><br><span class="line">            <span class="comment">// For now, calling setRemoteDevice will fire initial</span></span><br><span class="line">            <span class="comment">// onOpened/onUnconfigured callbacks.</span></span><br><span class="line">            <span class="comment">// This function call may post onDisconnected and throw CAMERA_DISCONNECTED if</span></span><br><span class="line">            <span class="comment">// cameraUser dies during setup.</span></span><br><span class="line">            <span class="comment">//CameraService返回的cameraUser和deviceImpl绑定</span></span><br><span class="line">            deviceImpl.setRemoteDevice(cameraUser);</span><br><span class="line">            device = deviceImpl;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> device;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>通过CameraManager.openCamera，Camera应用得到一个CameraDevice实例，它持有一个ICameraDeviceUser的Bp端引用。<br>我们来看一下CameraService的connectDevice函数，代码在frameworks&#x2F;av&#x2F;services&#x2F;camera&#x2F;libcameraservice&#x2F;CameraService.cpp<br>跟Camera1的open类似，connectDevice会调用connectHelper，又会调用到makeClient，我们直接看makeClient。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> CAMERA_DEVICE_API_VERSION_3_4:</span><br><span class="line">        <span class="keyword">if</span> (effectiveApiLevel == API_1) &#123; <span class="comment">// Camera1 API route</span></span><br><span class="line">            sp&lt;ICameraClient&gt; tmp = <span class="built_in">static_cast</span>&lt;ICameraClient*&gt;(cameraCb.<span class="built_in">get</span>());</span><br><span class="line">            *client = <span class="keyword">new</span> <span class="built_in">Camera2Client</span>(cameraService, tmp, packageName, <span class="built_in">cameraIdToInt</span>(cameraId),</span><br><span class="line">                    facing, clientPid, clientUid, servicePid, legacyMode);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123; <span class="comment">// Camera2 API route</span></span><br><span class="line">            sp&lt;hardware::camera2::ICameraDeviceCallbacks&gt; tmp =</span><br><span class="line">                    <span class="built_in">static_cast</span>&lt;hardware::camera2::ICameraDeviceCallbacks*&gt;(cameraCb.<span class="built_in">get</span>());</span><br><span class="line">            *client = <span class="keyword">new</span> <span class="built_in">CameraDeviceClient</span>(cameraService, tmp, packageName, cameraId,</span><br><span class="line">                    facing, clientPid, clientUid, servicePid);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br></pre></td></tr></table></figure>
+<p>我们看到Camera1和Camera2的代码是比较类似的，ICameraDeviceCallbacks等同于ICameraClient，CameraDeviceClient等同于Camera2Client。<br>再看继承关系</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CameraDeviceClient</span> :</span><br><span class="line">        <span class="keyword">public</span> Camera2ClientBase&lt;CameraDeviceClientBase&gt;,</span><br><span class="line">        <span class="keyword">public</span> camera2::FrameProcessorBase::FilteredListener&#123;&#125;</span><br><span class="line">        </span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Camera2Client</span> :</span><br><span class="line">        <span class="keyword">public</span> Camera2ClientBase&lt;CameraService::Client&gt;&#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>CameraDeviceClient和Camera2Client都继承了Camera2ClientBase，而CameraDeviceClientBase和CameraService::Client都继承了<br>CameraService::BasicClient。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">CameraDeviceClientBase</span> :</span><br><span class="line">         <span class="keyword">public</span> CameraService::BasicClient,</span><br><span class="line">         <span class="keyword">public</span> hardware::camera2::BnCameraDeviceUser&#123;&#125;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Client</span> : <span class="keyword">public</span> hardware::BnCamera, <span class="keyword">public</span> BasicClient&#123;&#125;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BnCamera</span>: <span class="keyword">public</span> android::BnInterface&lt;ICamera&gt;&#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>BnCameraDeviceUser就是ICameraDeviceUser的Bn端，而Camera1的相应的Interface是ICamera。<br>在Camera2ClientBase的构造函数中创建了Camera3Device。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">Camera2ClientBase&lt;TClientBase&gt;::<span class="built_in">Camera2ClientBase</span>(</span><br><span class="line">        <span class="type">const</span> sp&lt;CameraService&gt;&amp; cameraService,</span><br><span class="line">        <span class="type">const</span> sp&lt;TCamCallbacks&gt;&amp; remoteCallback,</span><br><span class="line">        <span class="type">const</span> String16&amp; clientPackageName,</span><br><span class="line">        <span class="type">const</span> String8&amp; cameraId,</span><br><span class="line">        <span class="type">int</span> cameraFacing,</span><br><span class="line">        <span class="type">int</span> clientPid,</span><br><span class="line">        <span class="type">uid_t</span> clientUid,</span><br><span class="line">        <span class="type">int</span> servicePid):</span><br><span class="line">        <span class="built_in">TClientBase</span>(cameraService, remoteCallback, clientPackageName,</span><br><span class="line">                cameraId, cameraFacing, clientPid, clientUid, servicePid),</span><br><span class="line">        <span class="built_in">mSharedCameraCallbacks</span>(remoteCallback),</span><br><span class="line">        <span class="built_in">mDeviceVersion</span>(cameraService-&gt;<span class="built_in">getDeviceVersion</span>(TClientBase::mCameraIdStr)),</span><br><span class="line">        <span class="built_in">mDeviceActive</span>(<span class="literal">false</span>)</span><br><span class="line">&#123;</span><br><span class="line">    mInitialClientPid = clientPid;</span><br><span class="line">    mDevice = <span class="keyword">new</span> <span class="built_in">Camera3Device</span>(cameraId);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以Camera1和Camera2在CameraServer中打开的CameraDevice实际上是相同的。<br>再构造函数之后，会调用CameraDeviceClient::initialize，转而调用CameraDeviceClient::initializeImpl。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> TProviderPtr&gt;</span></span><br><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">CameraDeviceClient::initializeImpl</span><span class="params">(TProviderPtr providerPtr)</span> </span>&#123;</span><br><span class="line">    <span class="built_in">ATRACE_CALL</span>();</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line"></span><br><span class="line">    res = Camera2ClientBase::<span class="built_in">initialize</span>(providerPtr);<span class="comment">//这里面会调用Camera3Device的initialize</span></span><br><span class="line">    <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//这里和Camera1是不同的，这里只开启一个线程，而Camera1中则开启了多个线程</span></span><br><span class="line">    String8 threadName;</span><br><span class="line">    mFrameProcessor = <span class="keyword">new</span> <span class="built_in">FrameProcessorBase</span>(mDevice);</span><br><span class="line">    threadName = String8::format(<span class="string">&quot;CDU-%s-FrameProc&quot;</span>, mCameraIdStr.<span class="built_in">string</span>());</span><br><span class="line">    mFrameProcessor-&gt;<span class="built_in">run</span>(threadName.<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">    mFrameProcessor-&gt;<span class="built_in">registerListener</span>(FRAME_PROCESSOR_LISTENER_MIN_ID,</span><br><span class="line">                                      FRAME_PROCESSOR_LISTENER_MAX_ID,</span><br><span class="line">                                      <span class="comment">/*listener*/</span><span class="keyword">this</span>,</span><br><span class="line">                                      <span class="comment">/*sendPartials*/</span><span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera3Device::initialize</span><span class="params">(sp&lt;CameraProviderManager&gt; manager)</span> </span>&#123;</span><br><span class="line">    <span class="function">Mutex::Autolock <span class="title">il</span><span class="params">(mInterfaceLock)</span></span>;</span><br><span class="line">    <span class="function">Mutex::Autolock <span class="title">l</span><span class="params">(mLock)</span></span>;</span><br><span class="line"></span><br><span class="line">    sp&lt;ICameraDeviceSession&gt; session;</span><br><span class="line">    <span class="comment">//这里会跟Hal交互打开session</span></span><br><span class="line">    <span class="type">status_t</span> res = manager-&gt;<span class="built_in">openSession</span>(mId.<span class="built_in">string</span>(), <span class="keyword">this</span>,</span><br><span class="line">            <span class="comment">/*out*/</span> &amp;session);</span><br><span class="line"></span><br><span class="line">    res = manager-&gt;<span class="built_in">getCameraCharacteristics</span>(mId.<span class="built_in">string</span>(), &amp;mDeviceInfo);</span><br><span class="line"></span><br><span class="line">    std::shared_ptr&lt;RequestMetadataQueue&gt; queue;</span><br><span class="line">    <span class="keyword">auto</span> requestQueueRet = session-&gt;<span class="built_in">getCaptureRequestMetadataQueue</span>(</span><br><span class="line">        [&amp;queue](<span class="type">const</span> <span class="keyword">auto</span>&amp; descriptor) &#123;</span><br><span class="line">            queue = std::<span class="built_in">make_shared</span>&lt;RequestMetadataQueue&gt;(descriptor);</span><br><span class="line">            <span class="keyword">if</span> (!queue-&gt;<span class="built_in">isValid</span>() || queue-&gt;<span class="built_in">availableToWrite</span>() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="built_in">ALOGE</span>(<span class="string">&quot;HAL returns empty request metadata fmq, not use it&quot;</span>);</span><br><span class="line">                queue = <span class="literal">nullptr</span>;</span><br><span class="line">                <span class="comment">// don&#x27;t use the queue onwards.</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    std::unique_ptr&lt;ResultMetadataQueue&gt;&amp; resQueue = mResultMetadataQueue;</span><br><span class="line">    <span class="keyword">auto</span> resultQueueRet = session-&gt;<span class="built_in">getCaptureResultMetadataQueue</span>(</span><br><span class="line">        [&amp;resQueue](<span class="type">const</span> <span class="keyword">auto</span>&amp; descriptor) &#123;</span><br><span class="line">            resQueue = std::<span class="built_in">make_unique</span>&lt;ResultMetadataQueue&gt;(descriptor);</span><br><span class="line">            <span class="keyword">if</span> (!resQueue-&gt;<span class="built_in">isValid</span>() || resQueue-&gt;<span class="built_in">availableToWrite</span>() &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="built_in">ALOGE</span>(<span class="string">&quot;HAL returns empty result metadata fmq, not use it&quot;</span>);</span><br><span class="line">                resQueue = <span class="literal">nullptr</span>;</span><br><span class="line">                <span class="comment">// Don&#x27;t use the resQueue onwards.</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    <span class="comment">//上面通过CameraSession获得RequestMetadataQueue和ResultMetadataQueue</span></span><br><span class="line">    mInterface = <span class="keyword">new</span> <span class="built_in">HalInterface</span>(session, queue);<span class="comment">//new一个HalInterface</span></span><br><span class="line">    std::string providerType;</span><br><span class="line">    mVendorTagId = manager-&gt;<span class="built_in">getProviderTagIdLocked</span>(mId.<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">initializeCommonLocked</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">Camera3Device::initializeCommonLocked</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//省略部分代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Create buffer manager */</span></span><br><span class="line">    mBufferManager = <span class="keyword">new</span> <span class="built_in">Camera3BufferManager</span>();</span><br><span class="line"></span><br><span class="line">    mTagMonitor.<span class="built_in">initialize</span>(mVendorTagId);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** Start up request queue thread */</span></span><br><span class="line">    mRequestThread = <span class="keyword">new</span> <span class="built_in">RequestThread</span>(<span class="keyword">this</span>, mStatusTracker, mInterface);</span><br><span class="line">    res = mRequestThread-&gt;<span class="built_in">run</span>(String8::format(<span class="string">&quot;C3Dev-%s-ReqQueue&quot;</span>, mId.<span class="built_in">string</span>()).<span class="built_in">string</span>());</span><br><span class="line"></span><br><span class="line">    mPreparerThread = <span class="keyword">new</span> <span class="built_in">PreparerThread</span>();</span><br><span class="line"></span><br><span class="line">    <span class="built_in">internalUpdateStatusLocked</span>(STATUS_UNCONFIGURED);</span><br><span class="line">    mNextStreamId = <span class="number">0</span>;</span><br><span class="line">    mDummyStreamId = NO_STREAM;</span><br><span class="line">    mNeedConfig = <span class="literal">true</span>;</span><br><span class="line">    mPauseStateNotify = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>RequestThread线程用来向Hal提交请求。</p>
+<p>我们再回到CameraManager,在CameraService打开Device后，会调用setRemoteDevice方法，将应用层用到的CameraDevice和CameraServer中的CameraDeviceClient绑定。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setRemoteDevice</span><span class="params">(ICameraDeviceUser remoteDevice)</span> <span class="keyword">throws</span> CameraAccessException &#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(mInterfaceLock) &#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Move from decorator to direct binder-mediated exceptions</span></span><br><span class="line">        <span class="comment">// If setRemoteFailure already called, do nothing</span></span><br><span class="line">        <span class="keyword">if</span> (mInError) <span class="keyword">return</span>;</span><br><span class="line">        <span class="comment">//这里又包装了一层</span></span><br><span class="line">        mRemoteDevice = <span class="keyword">new</span> <span class="title class_">ICameraDeviceUserWrapper</span>(remoteDevice);</span><br><span class="line"></span><br><span class="line">        <span class="type">IBinder</span> <span class="variable">remoteDeviceBinder</span> <span class="operator">=</span> remoteDevice.asBinder();</span><br><span class="line">        <span class="comment">// For legacy camera device, remoteDevice is in the same process, and</span></span><br><span class="line">        <span class="comment">// asBinder returns NULL.</span></span><br><span class="line">        <span class="keyword">if</span> (remoteDeviceBinder != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                remoteDeviceBinder.linkToDeath(<span class="built_in">this</span>, <span class="comment">/*flag*/</span> <span class="number">0</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (RemoteException e) &#123;</span><br><span class="line">                CameraDeviceImpl.<span class="built_in">this</span>.mDeviceHandler.post(mCallOnDisconnected);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">CameraAccessException</span>(CameraAccessException.CAMERA_DISCONNECTED,</span><br><span class="line">                        <span class="string">&quot;The camera device has encountered a serious error&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        mDeviceHandler.post(mCallOnOpened);</span><br><span class="line">        mDeviceHandler.post(mCallOnUnconfigured);</span><br><span class="line">        <span class="comment">//通过一开始传进来的handler发送消息</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Runnable</span> <span class="variable">mCallOnOpened</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Runnable</span>() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">//省略代码</span></span><br><span class="line">        <span class="comment">//回调一开始传入的StateCallback</span></span><br><span class="line">        mDeviceCallback.onOpened(CameraDeviceImpl.<span class="built_in">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>至此，通过CameraManager打开了相机设备，并且应用传入的StateCallback的onOpened被回调。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>Camera2 的openCamera同Camera1比较类似，在CameraServer进程中的CameraDevice都是Camera3Device，通过Camera3Device跟Hal层交互。<br>不同之处在Camera1打开相机是同步的，Camera2是异步回调的方式。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/02/16/Camera-Service%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="prev" title="Camera Service源码分析">
+                  <i class="fa fa-angle-left"></i> Camera Service源码分析
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/03/16/Camera2-preview/" rel="next" title="Camera2 preview">
+                  Camera2 preview <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

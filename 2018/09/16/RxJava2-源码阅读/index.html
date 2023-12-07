@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文对RxJava2的源码进行阅读分析. 一个例子1234567Flowable.just(&quot;Hello world&quot;)  .subscribe(new Consumer&lt;String&gt;() &#123;      @Override public void accept(String s) &#123;          System.out.println(s)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RxJava2 源码阅读">
+<meta property="og:url" content="http://example.com/2018/09/16/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="本文对RxJava2的源码进行阅读分析. 一个例子1234567Flowable.just(&quot;Hello world&quot;)  .subscribe(new Consumer&lt;String&gt;() &#123;      @Override public void accept(String s) &#123;          System.out.println(s)">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-09-16T09:50:11.000Z">
+<meta property="article:modified_time" content="2018-09-16T11:50:07.151Z">
+<meta property="article:author" content="Guo Xf">
+<meta property="article:tag" content="RxJava2">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2018/09/16/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2018/09/16/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/","path":"2018/09/16/RxJava2-源码阅读/","title":"RxJava2 源码阅读"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>RxJava2 源码阅读 | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">1.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E8%BF%BD%E6%BA%AF"><span class="nav-number">2.</span> <span class="nav-text">源码追溯</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/09/16/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="RxJava2 源码阅读 | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RxJava2 源码阅读
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2018-09-16 17:50:11 / عُدل: 19:50:07" itemprop="dateCreated datePublished" datetime="2018-09-16T17:50:11+08:00">2018-09-16</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文对RxJava2的源码进行阅读分析.</p>
+<h3 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Flowable.just(<span class="string">&quot;Hello world&quot;</span>)</span><br><span class="line">  .subscribe(<span class="keyword">new</span> <span class="title class_">Consumer</span>&lt;String&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">accept</span><span class="params">(String s)</span> &#123;</span><br><span class="line">          System.out.println(s);</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="源码追溯"><a href="#源码追溯" class="headerlink" title="源码追溯"></a>源码追溯</h3><p>我们知道，Rx主要的思路是一个观察者模式。上面这个简单的例子即是被观察者发送一个数据(“Hello wordl”)，观察者接收这个数据并打印。</p>
+<p>首先我们看一下Flowable的static方法just</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.FULL)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.NONE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; Flowable&lt;T&gt; <span class="title function_">just</span><span class="params">(T item)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onAssembly(<span class="keyword">new</span> <span class="title class_">FlowableJust</span>&lt;T&gt;(item));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这个方法返回了一个Flowable对象，接着</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings(&#123; &quot;rawtypes&quot;, &quot;unchecked&quot; &#125;)</span></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; Flowable&lt;T&gt; <span class="title function_">onAssembly</span><span class="params">(<span class="meta">@NonNull</span> Flowable&lt;T&gt; source)</span> &#123;</span><br><span class="line">    Function&lt;? <span class="built_in">super</span> Flowable, ? <span class="keyword">extends</span> <span class="title class_">Flowable</span>&gt; f = onFlowableAssembly;</span><br><span class="line">    <span class="keyword">if</span> (f != <span class="literal">null</span>) &#123;<span class="comment">//这里f == null</span></span><br><span class="line">        <span class="keyword">return</span> apply(f, source);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> source;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>just方法其实就是new 了一个FlowableJust对象，这里注意这个命名，因为是调用just方法返回的Flowable对象，所以这里的子类名为FlowableJust，还有很多其他同级的类，后面我们会看到。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">FlowableJust</span>&lt;T&gt; <span class="keyword">extends</span> <span class="title class_">Flowable</span>&lt;T&gt; <span class="keyword">implements</span> <span class="title class_">ScalarCallable</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> T value;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">FlowableJust</span><span class="params">(<span class="keyword">final</span> T value)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.value = value;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="built_in">super</span> T&gt; s)</span> &#123;</span><br><span class="line">        s.onSubscribe(<span class="keyword">new</span> <span class="title class_">ScalarSubscription</span>&lt;T&gt;(s, value));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> T <span class="title function_">call</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> value;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ScalarCallable是一个继承了Callable的接口，所以FlowableJust实现了call方法，<br>subscribeActual是继承自Flowable的抽象方法。</p>
+<p>我们继续看上面的例子，接下来FlowableJust调用了subscribe方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.SPECIAL)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.NONE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> Disposable <span class="title function_">subscribe</span><span class="params">(Consumer&lt;? <span class="built_in">super</span> T&gt; onNext, Consumer&lt;? <span class="built_in">super</span> Throwable&gt; onError,</span></span><br><span class="line"><span class="params">        Action onComplete, Consumer&lt;? <span class="built_in">super</span> Subscription&gt; onSubscribe)</span> &#123;</span><br><span class="line"></span><br><span class="line">    LambdaSubscriber&lt;T&gt; ls = <span class="keyword">new</span> <span class="title class_">LambdaSubscriber</span>&lt;T&gt;(onNext, onError, onComplete, onSubscribe);</span><br><span class="line"></span><br><span class="line">    subscribe(ls);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> ls;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>new 一个LambdaSubscriber对象，这是FlowableSubscriber的一个具体实现类。FlowableSubscriber又继承自Subscriber</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.SPECIAL)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.NONE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">subscribe</span><span class="params">(FlowableSubscriber&lt;? <span class="built_in">super</span> T&gt; s)</span> &#123;</span><br><span class="line">    ObjectHelper.requireNonNull(s, <span class="string">&quot;s is null&quot;</span>);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Subscriber&lt;? <span class="built_in">super</span> T&gt; z = RxJavaPlugins.onSubscribe(<span class="built_in">this</span>, s);</span><br><span class="line">        subscribeActual(z);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NullPointerException e) &#123; <span class="comment">// NOPMD</span></span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        Exceptions.throwIfFatal(e);</span><br><span class="line">        RxJavaPlugins.onError(e);</span><br><span class="line"></span><br><span class="line">        <span class="type">NullPointerException</span> <span class="variable">npe</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>(<span class="string">&quot;Actually not, but can&#x27;t throw other exceptions due to RS&quot;</span>);</span><br><span class="line">        npe.initCause(e);</span><br><span class="line">        <span class="keyword">throw</span> npe;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> RxJavaPlugins.onSubscribe实际上也没有改变输入的s.接下来也就是调用了FlowableJust的subscribeActual，传入的是一个Subscriber的具体实现类的实例，这里就是LambdaSubscriber。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="built_in">super</span> T&gt; s)</span> &#123;</span><br><span class="line">    s.onSubscribe(<span class="keyword">new</span> <span class="title class_">ScalarSubscription</span>&lt;T&gt;(s, value));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用了LambdaSubscriber的onSubscribe方法，传入了一个Subscription的具体实现类ScalarSubscription的一个实例对象。<br>ScalarSubscription继承了AtomicInteger。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onSubscribe</span><span class="params">(Subscription s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.setOnce(<span class="built_in">this</span>, s)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            onSubscribe.accept(<span class="built_in">this</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">            Exceptions.throwIfFatal(ex);</span><br><span class="line">            s.cancel();</span><br><span class="line">            onError(ex);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>因为例子中没有传入onSubscribe， 所以这里的onSubscribe是默认对象FlowableInternalHelper.RequestMax.INSTANCE</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> <span class="title class_">RequestMax</span> <span class="keyword">implements</span> <span class="title class_">Consumer</span>&lt;Subscription&gt; &#123;</span><br><span class="line">    INSTANCE;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">accept</span><span class="params">(Subscription t)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        t.request(Long.MAX_VALUE);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以onSubscribe.accept(this)实际上调用了LambdaSubscriber的request方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">(<span class="type">long</span> n)</span> &#123;</span><br><span class="line">    get().request(n);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个发现调用了get方法,所以我们会看LambdaSubscriber的onSubscribe方法，<br>SubscriptionHelper.setOnce(this, s)，设置了value</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="type">boolean</span> <span class="title function_">setOnce</span><span class="params">(AtomicReference&lt;Subscription&gt; field, Subscription s)</span> &#123;</span><br><span class="line">    ObjectHelper.requireNonNull(s, <span class="string">&quot;s is null&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (!field.compareAndSet(<span class="literal">null</span>, s)) &#123;<span class="comment">//如果filed == null,filed = s</span></span><br><span class="line">        s.cancel();</span><br><span class="line">        <span class="keyword">if</span> (field.get() != CANCELLED) &#123;</span><br><span class="line">            reportSubscriptionSet();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以get方法返回的是之前new的 ScalarSubscription<T>(s, value)，这里的s是一个Subscriber，<br>其实就是LambdaSubscriber，这里的value就是一开始just方法传入的”Hello world”。然后看ScalarSubscription的request方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">(<span class="type">long</span> n)</span> &#123;<span class="comment">//Long.MAX_VALUE</span></span><br><span class="line">    <span class="keyword">if</span> (!SubscriptionHelper.validate(n)) &#123;<span class="comment">//n 不能小于0</span></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (compareAndSet(NO_REQUEST, REQUESTED)) &#123;<span class="comment">//从0置1</span></span><br><span class="line">        Subscriber&lt;? <span class="built_in">super</span> T&gt; s = subscriber;</span><br><span class="line"></span><br><span class="line">        s.onNext(value);</span><br><span class="line">        <span class="keyword">if</span> (get() != CANCELLED) &#123;</span><br><span class="line">            s.onComplete();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用了LambdaSubscriber的onNext方法，传入的是”Hello world”.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onNext</span><span class="params">(T t)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!isDisposed()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            onNext.accept(t);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            Exceptions.throwIfFatal(e);</span><br><span class="line">            get().cancel();</span><br><span class="line">            onError(e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>onNext就是例子中传入的Consumer。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>简单来说，Subscriber.onSubscribe(Subscription),会调用Subscribe的request，然后调用到<br>Subscription的request，接着调到Subscriber的onNext.可见Subscription是Subscriber和Publisher的桥梁。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RxJava2/" rel="tag"># RxJava2</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/09/18/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB2/" rel="next" title="RxJava2 源码阅读2">
+                  RxJava2 源码阅读2 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Camera 源码分析CameraSerivice&#x2F;&#x2F;以下基于Android8.1代码 系统启动后会执行&#x2F;system&#x2F;bin&#x2F;cameraserver 这个程序是由main_cameraServer.cpp生成。 &#x2F;&#x2F;framworks&#x2F;av&#x2F;camera&#x2F;cameraserver&#x2F;ma">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera Service源码分析">
+<meta property="og:url" content="http://example.com/2019/02/16/Camera-Service%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="Camera 源码分析CameraSerivice&#x2F;&#x2F;以下基于Android8.1代码 系统启动后会执行&#x2F;system&#x2F;bin&#x2F;cameraserver 这个程序是由main_cameraServer.cpp生成。 &#x2F;&#x2F;framworks&#x2F;av&#x2F;camera&#x2F;cameraserver&#x2F;ma">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-02-16T10:50:36.000Z">
+<meta property="article:modified_time" content="2019-02-16T10:52:45.049Z">
+<meta property="article:author" content="Guo Xf">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2019/02/16/Camera-Service%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2019/02/16/Camera-Service%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/","path":"2019/02/16/Camera-Service源码分析/","title":"Camera Service源码分析"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera Service源码分析 | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Camera-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">Camera 源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#CameraSerivice"><span class="nav-number">1.1.</span> <span class="nav-text">CameraSerivice</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">1.2.</span> <span class="nav-text">小结</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/02/16/Camera-Service%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera Service源码分析 | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera Service源码分析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2019-02-16 18:50:36 / عُدل: 18:52:45" itemprop="dateCreated datePublished" datetime="2019-02-16T18:50:36+08:00">2019-02-16</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="Camera-源码分析"><a href="#Camera-源码分析" class="headerlink" title="Camera 源码分析"></a>Camera 源码分析</h2><h3 id="CameraSerivice"><a href="#CameraSerivice" class="headerlink" title="CameraSerivice"></a>CameraSerivice</h3><p>&#x2F;&#x2F;以下基于Android8.1代码</p>
+<p>系统启动后会执行&#x2F;system&#x2F;bin&#x2F;cameraserver</p>
+<p>这个程序是由main_cameraServer.cpp生成。</p>
+<p>&#x2F;&#x2F;framworks&#x2F;av&#x2F;camera&#x2F;cameraserver&#x2F;main_camerserver.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc __unused, <span class="type">char</span>** argv __unused)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"></span><br><span class="line"> <span class="function">sp&lt;ProcessState&gt; <span class="title">proc</span><span class="params">(ProcessState::self())</span></span>;</span><br><span class="line"></span><br><span class="line"> sp&lt;IServiceManager&gt; sm = <span class="built_in">defaultServiceManager</span>();</span><br><span class="line"></span><br><span class="line"> <span class="built_in">ALOGI</span>(<span class="string">&quot;ServiceManager: %p&quot;</span>, sm.<span class="built_in">get</span>());</span><br><span class="line"></span><br><span class="line"> CameraService::<span class="built_in">instantiate</span>();</span><br><span class="line"></span><br><span class="line"> ProcessState::<span class="built_in">self</span>()-&gt;<span class="built_in">startThreadPool</span>();</span><br><span class="line"></span><br><span class="line"> IPCThreadState::<span class="built_in">self</span>()-&gt;<span class="built_in">joinThreadPool</span>();</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>CameraService::instantiate();<br>这里我们只看这一行，其他的都是和IPC相关的内容。<br>调用了CameraService的静态函数instantiate，而这个静态函数是从它的父类<br>BinderService继承来的。</p>
+<p>&#x2F;&#x2F;framworks&#x2F;native&#x2F;include&#x2F;binder&#x2F;BinderService.h</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">static</span> <span class="type">void</span> <span class="title">instantiate</span><span class="params">()</span> </span>&#123; <span class="built_in">publish</span>(); &#125;</span><br><span class="line"><span class="function"><span class="type">static</span> <span class="type">status_t</span> <span class="title">publish</span><span class="params">(<span class="type">bool</span> allowIsolated = <span class="literal">false</span>)</span> </span>&#123;</span><br><span class="line">     <span class="function">sp&lt;IServiceManager&gt; <span class="title">sm</span><span class="params">(defaultServiceManager())</span></span>;</span><br><span class="line">      <span class="keyword">return</span> sm-&gt;<span class="built_in">addService</span>(</span><br><span class="line">              <span class="built_in">String16</span>(SERVICE::<span class="built_in">getServiceName</span>()),</span><br><span class="line">              <span class="keyword">new</span> <span class="built_in">SERVICE</span>(), allowIsolated);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+<p>new了一个CameraService实例并将其addService到ServiceManager。</p>
+<p>&#x2F;&#x2F;framworks&#x2F;av&#x2F;services&#x2F;camera&#x2F;libcameraservice&#x2F;CameraService.cpp</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">CameraService::<span class="built_in">CameraService</span>() :</span><br><span class="line">        <span class="built_in">mEventLog</span>(DEFAULT_EVENT_LOG_LENGTH),</span><br><span class="line">        <span class="built_in">mNumberOfCameras</span>(<span class="number">0</span>), <span class="built_in">mNumberOfNormalCameras</span>(<span class="number">0</span>),</span><br><span class="line">        <span class="built_in">mSoundRef</span>(<span class="number">0</span>), <span class="built_in">mInitialized</span>(<span class="literal">false</span>) &#123;</span><br><span class="line">    <span class="built_in">ALOGI</span>(<span class="string">&quot;CameraService started (pid=%d)&quot;</span>, <span class="built_in">getpid</span>());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>-&gt;camera_device_status_change = android::camera_device_status_change;</span><br><span class="line">    <span class="keyword">this</span>-&gt;torch_mode_status_change = android::torch_mode_status_change;</span><br><span class="line"></span><br><span class="line">    mServiceLockWrapper = std::<span class="built_in">make_shared</span>&lt;WaitableMutexWrapper&gt;(&amp;mServiceLock);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到CameraService的构造函数只是一些简单的初始化。<br>再看一下CameraService的继承情况。<br>&#x2F;&#x2F;framworks&#x2F;av&#x2F;services&#x2F;camera&#x2F;libcameraservice&#x2F;CameraService.h</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CameraService</span> :</span><br><span class="line">    <span class="keyword">public</span> BinderService&lt;CameraService&gt;,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">virtual</span> ::android::hardware::BnCameraService,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">virtual</span> IBinder::DeathRecipient,</span><br><span class="line">    <span class="keyword">public</span> <span class="type">camera_module_callbacks_t</span>,</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">virtual</span> CameraProviderManager::StatusListener</span><br></pre></td></tr></table></figure>
+
+<p>BinderService提供了Service的创建和发布，BnCameraService是通过ICameraService.aidl<br>生产的类，它继承了BnInterface<ICameraService>,BnInterface<br>又继承了BBinder，BBiner继承了IBinder。所以实际上CameraService<br>是应用进程和camerserver进程IPC通信的服务端实现。</p>
+<p>CameraService的初始化其实还没有结束，我们回看ServiceManager的addService函数。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">virtual</span> <span class="type">status_t</span>            <span class="title">addService</span><span class="params">( <span class="type">const</span> String16&amp; name,</span></span></span><br><span class="line"><span class="params"><span class="function">                                            <span class="type">const</span> sp&lt;IBinder&gt;&amp; service,</span></span></span><br><span class="line"><span class="params"><span class="function">                                            <span class="type">bool</span> allowIsolated = <span class="literal">false</span>)</span> </span>= <span class="number">0</span>;</span><br></pre></td></tr></table></figure>
+<p>可以看到第二个参数是sp类型的引用，</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line">sp&lt;T&gt;::<span class="built_in">sp</span>(T* other)</span><br><span class="line">        : <span class="built_in">m_ptr</span>(other) &#123;</span><br><span class="line">    <span class="keyword">if</span> (other)</span><br><span class="line">        other-&gt;<span class="built_in">incStrong</span>(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里可能不是调用这个函数但是都是会调用到other-&gt;incStrong(this);</p>
+<p>other就是CameraService的指针，incStrong函数继承自RefBase。<br>在incStrong函数里会调用RefBase的onFirstRef函数，这里因为多态的关系，<br>实际上调用到了CameraService的onFirstRef。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CameraService::onFirstRef</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   <span class="built_in">ALOGI</span>(<span class="string">&quot;CameraService process starting&quot;</span>);</span><br><span class="line">    BnCameraService::<span class="built_in">onFirstRef</span>();</span><br><span class="line"></span><br><span class="line">    <span class="type">status_t</span> res = INVALID_OPERATION;</span><br><span class="line"></span><br><span class="line">    res = <span class="built_in">enumerateProviders</span>();</span><br><span class="line">    <span class="keyword">if</span> (res == OK) &#123;</span><br><span class="line">        mInitialized = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    CameraService::<span class="built_in">pingCameraServiceProxy</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>res &#x3D; enumerateProviders();这一行是关键。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">CameraService::enumerateProviders</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="type">status_t</span> res;</span><br><span class="line">    <span class="function">Mutex::Autolock <span class="title">l</span><span class="params">(mServiceLock)</span></span>;wanc</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">//初始化CameraProviderManager</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="literal">nullptr</span> == mCameraProviderManager.<span class="built_in">get</span>()) &#123;</span><br><span class="line">        mCameraProviderManager = <span class="keyword">new</span> <span class="built_in">CameraProviderManager</span>();</span><br><span class="line">        res = mCameraProviderManager-&gt;<span class="built_in">initialize</span>(<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">            <span class="built_in">ALOGE</span>(<span class="string">&quot;%s: Unable to initialize camera provider manager: %s (%d)&quot;</span>,</span><br><span class="line">                    __FUNCTION__, <span class="built_in">strerror</span>(-res), res);</span><br><span class="line">            <span class="keyword">return</span> res;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    mNumberOfCameras = mCameraProviderManager-&gt;<span class="built_in">getCameraCount</span>();</span><br><span class="line">    mNumberOfNormalCameras =</span><br><span class="line">            mCameraProviderManager-&gt;<span class="built_in">getAPI1CompatibleCameraCount</span>();</span><br><span class="line">    <span class="comment">// Setup vendor tags before we call get_camera_info the first time</span></span><br><span class="line">    <span class="comment">// because HAL might need to setup static vendor keys in get_camera_info</span></span><br><span class="line">    <span class="comment">// <span class="doctag">TODO:</span> maybe put this into CameraProviderManager::initialize()?</span></span><br><span class="line">    mCameraProviderManager-&gt;<span class="built_in">setUpVendorTags</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; cameraId : mCameraProviderManager-&gt;<span class="built_in">getCameraDeviceIds</span>()) &#123;</span><br><span class="line">        String8 id8 = <span class="built_in">String8</span>(cameraId.<span class="built_in">c_str</span>());</span><br><span class="line">        <span class="type">bool</span> cameraFound = <span class="literal">false</span>;</span><br><span class="line">        &#123;</span><br><span class="line"></span><br><span class="line">            <span class="function">Mutex::Autolock <span class="title">lock</span><span class="params">(mCameraStatesLock)</span></span>;</span><br><span class="line">            <span class="keyword">auto</span> iter = mCameraStates.<span class="built_in">find</span>(id8);</span><br><span class="line">            <span class="keyword">if</span> (iter != mCameraStates.<span class="built_in">end</span>()) &#123;</span><br><span class="line">                cameraFound = <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!cameraFound) &#123;</span><br><span class="line">            hardware::camera::common::V1_0::CameraResourceCost cost;</span><br><span class="line">            res = mCameraProviderManager-&gt;<span class="built_in">getResourceCost</span>(cameraId, &amp;cost);</span><br><span class="line">            <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">                <span class="built_in">ALOGE</span>(<span class="string">&quot;Failed to query device resource cost: %s (%d)&quot;</span>, <span class="built_in">strerror</span>(-res), res);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            std::set&lt;String8&gt; conflicting;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; cost.conflictingDevices.<span class="built_in">size</span>(); i++) &#123;</span><br><span class="line">                conflicting.<span class="built_in">emplace</span>(<span class="built_in">String8</span>(cost.conflictingDevices[i].<span class="built_in">c_str</span>()));</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="function">Mutex::Autolock <span class="title">lock</span><span class="params">(mCameraStatesLock)</span></span>;</span><br><span class="line">                mCameraStates.<span class="built_in">emplace</span>(id8,</span><br><span class="line">                    std::<span class="built_in">make_shared</span>&lt;CameraState&gt;(id8, cost.resourceCost, conflicting));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//初始化CameraState，并调用onDeviceStatusChanged</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">onDeviceStatusChanged</span>(id8, CameraDeviceStatus::PRESENT);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (mFlashlight-&gt;<span class="built_in">hasFlashUnit</span>(id8)) &#123;</span><br><span class="line">            mTorchStatusMap.<span class="built_in">add</span>(id8, TorchModeStatus::AVAILABLE_OFF);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的重点是CameraProviderManager的initialize</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">CameraProviderManager::initialize</span><span class="params">(wp&lt;CameraProviderManager::StatusListener&gt; listener,</span></span></span><br><span class="line"><span class="params"><span class="function">        ServiceInteractionProxy* proxy)</span> </span>&#123;</span><br><span class="line">    <span class="function">std::lock_guard&lt;std::mutex&gt; <span class="title">lock</span><span class="params">(mInterfaceMutex)</span></span>;</span><br><span class="line">    <span class="keyword">if</span> (proxy == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        <span class="built_in">ALOGE</span>(<span class="string">&quot;%s: No valid service interaction proxy provided&quot;</span>, __FUNCTION__);</span><br><span class="line">        <span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">    &#125;</span><br><span class="line">    mListener = listener;</span><br><span class="line">    mServiceProxy = proxy;</span><br><span class="line">    <span class="comment">// Registering will trigger notifications for all already-known providers</span></span><br><span class="line">    <span class="type">bool</span> success = mServiceProxy-&gt;<span class="built_in">registerForNotifications</span>(</span><br><span class="line">        <span class="comment">/* instance name, empty means no filter */</span> <span class="string">&quot;&quot;</span>,</span><br><span class="line">        <span class="keyword">this</span>);</span><br><span class="line">    <span class="keyword">if</span> (!success) &#123;</span><br><span class="line">        <span class="built_in">ALOGE</span>(<span class="string">&quot;%s: Unable to register with hardware service manager for notifications &quot;</span></span><br><span class="line">                <span class="string">&quot;about camera providers&quot;</span>, __FUNCTION__);</span><br><span class="line">        <span class="keyword">return</span> INVALID_OPERATION;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// See if there&#x27;s a passthrough HAL, but let&#x27;s not complain if there&#x27;s not</span></span><br><span class="line">    <span class="built_in">addProviderLocked</span>(kLegacyProviderName, <span class="comment">/*expected*/</span> <span class="literal">false</span>);</span><br><span class="line">    <span class="comment">//const std::string kLegacyProviderName(&quot;legacy/0&quot;);</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里调用了addProviderLocked函数，字面理解就是添加Provider。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">status_t</span> <span class="title">CameraProviderManager::addProviderLocked</span><span class="params">(<span class="type">const</span> std::string&amp; newProvider, <span class="type">bool</span> expected)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">const</span> <span class="keyword">auto</span>&amp; providerInfo : mProviders) &#123;</span><br><span class="line">        <span class="keyword">if</span> (providerInfo-&gt;mProviderName == newProvider) &#123;</span><br><span class="line">            <span class="built_in">ALOGW</span>(<span class="string">&quot;%s: Camera provider HAL with name &#x27;%s&#x27; already registered&quot;</span>, __FUNCTION__,</span><br><span class="line">                    newProvider.<span class="built_in">c_str</span>());</span><br><span class="line">            <span class="keyword">return</span> ALREADY_EXISTS;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;<span class="comment">//一开始mProvider应该是空的</span></span><br><span class="line"></span><br><span class="line">    sp&lt;provider::V2_4::ICameraProvider&gt; interface;</span><br><span class="line">    interface = mServiceProxy-&gt;<span class="built_in">getService</span>(newProvider);</span><br><span class="line">    <span class="comment">//virtual sp&lt;hardware::camera::provider::V2_4::ICameraProvider&gt; getService(</span></span><br><span class="line">    <span class="comment">//            const std::string &amp;serviceName) override &#123;</span></span><br><span class="line">    <span class="comment">//        return hardware::camera::provider::V2_4::ICameraProvider::getService(serviceName);</span></span><br><span class="line">    <span class="comment">//    &#125;</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (interface == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (expected) &#123;</span><br><span class="line">            <span class="built_in">ALOGE</span>(<span class="string">&quot;%s: Camera provider HAL &#x27;%s&#x27; is not actually available&quot;</span>, __FUNCTION__,</span><br><span class="line">                    newProvider.<span class="built_in">c_str</span>());</span><br><span class="line">            <span class="keyword">return</span> BAD_VALUE;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> OK;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    sp&lt;ProviderInfo&gt; providerInfo =</span><br><span class="line">            <span class="keyword">new</span> <span class="built_in">ProviderInfo</span>(newProvider, interface, <span class="keyword">this</span>);</span><br><span class="line">    <span class="type">status_t</span> res = providerInfo-&gt;<span class="built_in">initialize</span>();</span><br><span class="line">    <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">        <span class="keyword">return</span> res;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//new ProviderInfo并初始化，然后添加到vector</span></span><br><span class="line">    mProviders.<span class="built_in">push_back</span>(providerInfo);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>看一下ProviderInfo的initialize函数</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//部分代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// Get initial list of camera devices, if any</span></span><br><span class="line">    std::vector&lt;std::string&gt; devices;</span><br><span class="line">    hardware::Return&lt;<span class="type">void</span>&gt; ret = mInterface-&gt;<span class="built_in">getCameraIdList</span>([&amp;status, &amp;devices](</span><br><span class="line">            Status idStatus,</span><br><span class="line">            <span class="type">const</span> hardware::hidl_vec&lt;hardware::hidl_string&gt;&amp; cameraDeviceNames) &#123;</span><br><span class="line">        status = idStatus;</span><br><span class="line">        <span class="keyword">if</span> (status == Status::OK) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">size_t</span> i = <span class="number">0</span>; i &lt; cameraDeviceNames.<span class="built_in">size</span>(); i++) &#123;</span><br><span class="line">                devices.<span class="built_in">push_back</span>(cameraDeviceNames[i]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; &#125;);</span><br><span class="line">    <span class="comment">//这里涉及到hidl</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; device : devices) &#123;</span><br><span class="line">        std::string id;</span><br><span class="line">        <span class="type">status_t</span> res = <span class="built_in">addDevice</span>(device,</span><br><span class="line">                hardware::camera::common::V1_0::CameraDeviceStatus::PRESENT, &amp;id);</span><br><span class="line">        <span class="keyword">if</span> (res != OK) &#123;</span><br><span class="line">            <span class="built_in">ALOGE</span>(<span class="string">&quot;%s: Unable to enumerate camera device &#x27;%s&#x27;: %s (%d)&quot;</span>,</span><br><span class="line">                    __FUNCTION__, device.<span class="built_in">c_str</span>(), <span class="built_in">strerror</span>(-res), res);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//addDevice会根据从hal拿到的deviceName解析出来的hal版本来创建DeviceInfo或者DeviceInfo3</span></span><br><span class="line">    <span class="comment">//DeviceInfo会持有android.hardware.camera.device@1.0::ICameraDevice类型的引用</span></span><br><span class="line">    <span class="comment">//DeviceInfo3则会持有android.hardware.camera.device@3.2::ICameraDevice类型的引用</span></span><br><span class="line">    <span class="comment">//相当于hal的device在这里的一个代理</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">auto</span>&amp; device : mDevices) &#123;</span><br><span class="line">        mUniqueCameraIds.<span class="built_in">insert</span>(device-&gt;mId);</span><br><span class="line">        <span class="keyword">if</span> (device-&gt;<span class="built_in">isAPI1Compatible</span>()) &#123;</span><br><span class="line">            mUniqueAPI1CompatibleCameraIds.<span class="built_in">insert</span>(device-&gt;mId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    mUniqueDeviceCount = mUniqueCameraIds.<span class="built_in">size</span>();</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>以上CameraService的初始化才算完成。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>CameraService的初始化比较关键的逻辑是CameraProviderManager的初始化，CameraProviderManager<br>又创建了ProviderInfo，ProviderInfo的初始化会跟hal层交互拿到DeviceInfo，而DeviceInfo又包含了<br>对Hal层设备的引用。这样就建立起了CameraService和Hal层Camera Device的联系。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/01/26/Camera-preview/" rel="prev" title="Camera-preview">
+                  <i class="fa fa-angle-left"></i> Camera-preview
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/02/16/Camera2-Open%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" rel="next" title="Camera2 Open源码分析">
+                  Camera2 Open源码分析 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

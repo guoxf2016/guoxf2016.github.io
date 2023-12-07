@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="GLSurfaceView 源码分析引言本文分析GLSurfaceView的源码 简介GLSurfaceVIew 是 SurfaceView的一个实现，它使用了一个专用的Surface来显示OpenGL渲染。 GLSurfaceView提供了一下特性,  管理一个Surface，也就是一个内存块，可以被复合到View System。 接受一个自定义的Renderer对象处理实际的渲染工作。 在一个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GLSurfaceView源码阅读">
+<meta property="og:url" content="http://example.com/2019/08/07/GLSurfaceView%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="GLSurfaceView 源码分析引言本文分析GLSurfaceView的源码 简介GLSurfaceVIew 是 SurfaceView的一个实现，它使用了一个专用的Surface来显示OpenGL渲染。 GLSurfaceView提供了一下特性,  管理一个Surface，也就是一个内存块，可以被复合到View System。 接受一个自定义的Renderer对象处理实际的渲染工作。 在一个">
+<meta property="og:locale">
+<meta property="article:published_time" content="2019-08-07T14:50:12.000Z">
+<meta property="article:modified_time" content="2019-08-07T14:52:17.225Z">
+<meta property="article:author" content="Guo Xf">
+<meta property="article:tag" content="Android OpenGL">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2019/08/07/GLSurfaceView%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2019/08/07/GLSurfaceView%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/","path":"2019/08/07/GLSurfaceView源码阅读/","title":"GLSurfaceView源码阅读"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>GLSurfaceView源码阅读 | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#GLSurfaceView-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">1.</span> <span class="nav-text">GLSurfaceView 源码分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number"></span> <span class="nav-text">引言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">源码分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2019/08/07/GLSurfaceView%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="GLSurfaceView源码阅读 | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          GLSurfaceView源码阅读
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2019-08-07 22:50:12 / عُدل: 22:52:17" itemprop="dateCreated datePublished" datetime="2019-08-07T22:50:12+08:00">2019-08-07</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h3 id="GLSurfaceView-源码分析"><a href="#GLSurfaceView-源码分析" class="headerlink" title="GLSurfaceView 源码分析"></a>GLSurfaceView 源码分析</h3><h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文分析GLSurfaceView的源码</p>
+<h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>GLSurfaceVIew 是 SurfaceView的一个实现，它使用了一个专用的Surface来显示OpenGL渲染。</p>
+<p>GLSurfaceView提供了一下特性,</p>
+<ol>
+<li>管理一个Surface，也就是一个内存块，可以被复合到View System。</li>
+<li>接受一个自定义的Renderer对象处理实际的渲染工作。</li>
+<li>在一个专用的线程中渲染，与UI Thread 解耦，并具有较好的性能。</li>
+<li>支持on-demand渲染和continuous渲染。</li>
+</ol>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>GLSurfaceView 继承了SurfaceView， 并实现了SurfaceHolder.Callback2接口。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Callback2</span> <span class="keyword">extends</span> <span class="title class_">Callback</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">surfaceRedrawNeeded</span><span class="params">(SurfaceHolder holder)</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Callback</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">surfaceCreated</span><span class="params">(SurfaceHolder holder)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">surfaceChanged</span><span class="params">(SurfaceHolder holder, <span class="type">int</span> format, <span class="type">int</span> width,</span></span><br><span class="line"><span class="params">            <span class="type">int</span> height)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">surfaceDestroyed</span><span class="params">(SurfaceHolder holder)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>构造方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">GLSurfaceView</span><span class="params">(Context context, AttributeSet attrs)</span> &#123;</span><br><span class="line">    <span class="built_in">super</span>(context, attrs);</span><br><span class="line">    init();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Renderer接口</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Renderer</span> &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">onSurfaceCreated</span><span class="params">(GL10 gl, EGLConfig config)</span>;</span><br><span class="line"></span><br><span class="line">   </span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">onSurfaceChanged</span><span class="params">(GL10 gl, <span class="type">int</span> width, <span class="type">int</span> height)</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">onDrawFrame</span><span class="params">(GL10 gl)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>setRenderer方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setRenderer</span><span class="params">(Renderer renderer)</span> &#123;</span><br><span class="line">    checkRenderThreadState();<span class="comment">//确保mGLThread == null</span></span><br><span class="line">    <span class="keyword">if</span> (mEGLConfigChooser == <span class="literal">null</span>) &#123;</span><br><span class="line">        mEGLConfigChooser = <span class="keyword">new</span> <span class="title class_">SimpleEGLConfigChooser</span>(<span class="literal">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mEGLContextFactory == <span class="literal">null</span>) &#123;</span><br><span class="line">        mEGLContextFactory = <span class="keyword">new</span> <span class="title class_">DefaultContextFactory</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mEGLWindowSurfaceFactory == <span class="literal">null</span>) &#123;</span><br><span class="line">        mEGLWindowSurfaceFactory = <span class="keyword">new</span> <span class="title class_">DefaultWindowSurfaceFactory</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    mRenderer = renderer;</span><br><span class="line">    mGLThread = <span class="keyword">new</span> <span class="title class_">GLThread</span>(mThisWeakRef);</span><br><span class="line">    mGLThread.start();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>创建GlThread并start</p>
+<p>GLThread继承了Thread，它的run方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">    setName(<span class="string">&quot;GLThread &quot;</span> + getId());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        guardedRun();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="comment">// fall thru and exit normally</span></span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        sGLThreadManager.threadExiting(<span class="built_in">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>guardedRun方法非常长，里面有 while (true)循环，</p>
+<p>内部类EglHelper提供了EGL的相关操作，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//初始化EGL环境</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//主要初始化几个变量mEglDisplay, mEglConfig, mEglContext</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">start</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Get an EGL instance</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    mEgl = (EGL10) EGLContext.getEGL();</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Get to the default display.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    mEglDisplay = mEgl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mEglDisplay == EGL10.EGL_NO_DISPLAY) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;eglGetDisplay failed&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * We can now initialize EGL for that display</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">int</span>[] version = <span class="keyword">new</span> <span class="title class_">int</span>[<span class="number">2</span>];</span><br><span class="line">    <span class="keyword">if</span>(!mEgl.eglInitialize(mEglDisplay, version)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;eglInitialize failed&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">GLSurfaceView</span> <span class="variable">view</span> <span class="operator">=</span> mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view == <span class="literal">null</span>) &#123;</span><br><span class="line">        mEglConfig = <span class="literal">null</span>;</span><br><span class="line">        mEglContext = <span class="literal">null</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        mEglConfig = view.mEGLConfigChooser.chooseConfig(mEgl, mEglDisplay);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">        * Create an EGL context. We want to do this as rarely as we can, because an</span></span><br><span class="line"><span class="comment">        * EGL context is a somewhat heavy object.</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        mEglContext = view.mEGLContextFactory.createContext(mEgl, mEglDisplay, mEglConfig);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (mEglContext == <span class="literal">null</span> || mEglContext == EGL10.EGL_NO_CONTEXT) &#123;</span><br><span class="line">        mEglContext = <span class="literal">null</span>;</span><br><span class="line">        throwEglException(<span class="string">&quot;createContext&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    mEglSurface = <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建和销毁EGlSurface</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">EGLWindowSurfaceFactory</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  <span class="doctag">@return</span> null if the surface cannot be constructed.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    EGLSurface <span class="title function_">createWindowSurface</span><span class="params">(EGL10 egl, EGLDisplay display, EGLConfig config,</span></span><br><span class="line"><span class="params">            Object nativeWindow)</span>;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">destroySurface</span><span class="params">(EGL10 egl, EGLDisplay display, EGLSurface surface)</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">DefaultWindowSurfaceFactory</span> <span class="keyword">implements</span> <span class="title class_">EGLWindowSurfaceFactory</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> EGLSurface <span class="title function_">createWindowSurface</span><span class="params">(EGL10 egl, EGLDisplay display,</span></span><br><span class="line"><span class="params">            EGLConfig config, Object nativeWindow)</span> &#123;</span><br><span class="line">        <span class="type">EGLSurface</span> <span class="variable">result</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            result = egl.eglCreateWindowSurface(display, config, nativeWindow, <span class="literal">null</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IllegalArgumentException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">destroySurface</span><span class="params">(EGL10 egl, EGLDisplay display,</span></span><br><span class="line"><span class="params">            EGLSurface surface)</span> &#123;</span><br><span class="line">        egl.eglDestroySurface(display, surface);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在创建EGLSurface之后要调用eglMakeCurrent</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Before we can issue GL commands, we need to make sure</span></span><br><span class="line"><span class="comment"> * the context is current and bound to a surface.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">if</span> (!mEgl.eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) &#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Could not make the context current, probably because the underlying</span></span><br><span class="line"><span class="comment">     * SurfaceView surface has been destroyed.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    logEglErrorAsWarning(<span class="string">&quot;EGLHelper&quot;</span>, <span class="string">&quot;eglMakeCurrent&quot;</span>, mEgl.eglGetError());</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>在GLThread的while（true） 循环中, 回调Renderer的onSurfaceCreated，在这个回调中可以初始化Render所需要的资源</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">if</span> (createEglContext) &#123;</span><br><span class="line">    <span class="type">GLSurfaceView</span> <span class="variable">view</span> <span class="operator">=</span> mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_VIEW, <span class="string">&quot;onSurfaceCreated&quot;</span>);</span><br><span class="line">            view.mRenderer.onSurfaceCreated(gl, mEglHelper.mEglConfig);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_VIEW);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    createEglContext = <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Renderer的onSurfaceChanged回调，在这里可以set viewport，gl.glViewport(0, 0, width, height);</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">if</span> (sizeChanged) &#123;</span><br><span class="line">    <span class="type">GLSurfaceView</span> <span class="variable">view</span> <span class="operator">=</span> mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_VIEW, <span class="string">&quot;onSurfaceChanged&quot;</span>);</span><br><span class="line">            view.mRenderer.onSurfaceChanged(gl, w, h);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_VIEW);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    sizeChanged = <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Renderer的onDrawFrame， 在这里调用gl绘制</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="type">GLSurfaceView</span> <span class="variable">view</span> <span class="operator">=</span> mGLSurfaceViewWeakRef.get();</span><br><span class="line">    <span class="keyword">if</span> (view != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Trace.traceBegin(Trace.TRACE_TAG_VIEW, <span class="string">&quot;onDrawFrame&quot;</span>);</span><br><span class="line">            view.mRenderer.onDrawFrame(gl);</span><br><span class="line">            <span class="keyword">if</span> (finishDrawingRunnable != <span class="literal">null</span>) &#123;</span><br><span class="line">                finishDrawingRunnable.run();</span><br><span class="line">                finishDrawingRunnable = <span class="literal">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Trace.traceEnd(Trace.TRACE_TAG_VIEW);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>onDrawFrame之后会调用eglSwapBuffers。</p>
+<p>onResume和onPause</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onPause</span><span class="params">()</span> &#123;</span><br><span class="line">    mGLThread.onPause();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onResume</span><span class="params">()</span> &#123;</span><br><span class="line">    mGLThread.onResume();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onPause</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (sGLThreadManager) &#123;</span><br><span class="line">            mRequestPaused = <span class="literal">true</span>;</span><br><span class="line">            sGLThreadManager.notifyAll();</span><br><span class="line">            <span class="keyword">while</span> ((! mExited) &amp;&amp; (! mPaused)) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    sGLThreadManager.wait();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException ex) &#123;</span><br><span class="line">                    Thread.currentThread().interrupt();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onResume</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">synchronized</span> (sGLThreadManager) &#123;</span><br><span class="line">            mRequestPaused = <span class="literal">false</span>;</span><br><span class="line">            mRequestRender = <span class="literal">true</span>;</span><br><span class="line">            mRenderComplete = <span class="literal">false</span>;</span><br><span class="line">            sGLThreadManager.notifyAll();</span><br><span class="line">            <span class="keyword">while</span> ((! mExited) &amp;&amp; mPaused &amp;&amp; (!mRenderComplete)) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    sGLThreadManager.wait();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException ex) &#123;</span><br><span class="line">                    Thread.currentThread().interrupt();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过改变几个boolean变量控制GLThread</p>
+<p>SurfaceHodler.Callback的几个接口，surfaceCreated， surfaceDestroyed， surfaceChanged，<br>包括requestRender，<br>都会调用GLThread的方法，改变那几个boolean变量，控制GLThread的执行。</p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>从上面的分析，我们可以看到， GlSurfaceView主要是提供了gl环境和GLThread，用户可以定义Renderer对象，来实现渲染逻辑。</p>
+<p>同时提供了requestRender， onPause, onResume等几个方法，来控制GLThread的执行。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Android-OpenGL/" rel="tag"># Android OpenGL</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/03/16/Camera-provider-service/" rel="prev" title="Camera provider service">
+                  <i class="fa fa-angle-left"></i> Camera provider service
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

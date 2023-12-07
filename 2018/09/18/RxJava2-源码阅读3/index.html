@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文继续分析RxJava的源码，主要来看一下线程的调度,前面的例子发布者和订阅者都是处于同一个线程。RxJava可以调度使其处于不同的线程。 一个例子1234567891011121314Flowable.just(1, 2, 3).map(new Function &lt; Integer, String &gt; () &#123;    @Override    public String">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RxJava2 源码阅读3">
+<meta property="og:url" content="http://example.com/2018/09/18/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB3/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="本文继续分析RxJava的源码，主要来看一下线程的调度,前面的例子发布者和订阅者都是处于同一个线程。RxJava可以调度使其处于不同的线程。 一个例子1234567891011121314Flowable.just(1, 2, 3).map(new Function &lt; Integer, String &gt; () &#123;    @Override    public String">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-09-18T13:31:39.000Z">
+<meta property="article:modified_time" content="2018-09-18T13:41:03.753Z">
+<meta property="article:author" content="Guo Xf">
+<meta property="article:tag" content="RxJava2">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2018/09/18/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB3/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2018/09/18/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB3/","path":"2018/09/18/RxJava2-源码阅读3/","title":"RxJava2 源码阅读3"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>RxJava2 源码阅读3 | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">1.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%87%E6%8D%A2%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">切换线程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/09/18/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="RxJava2 源码阅读3 | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          RxJava2 源码阅读3
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2018-09-18 21:31:39 / عُدل: 21:41:03" itemprop="dateCreated datePublished" datetime="2018-09-18T21:31:39+08:00">2018-09-18</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文继续分析RxJava的源码，主要来看一下线程的调度,前面的例子发布者和订阅者都是处于同一个线程。RxJava可以调度使其处于不同的线程。</p>
+<h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Flowable.just(<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>)</span><br><span class="line">.map(<span class="keyword">new</span> <span class="title class_">Function</span> &lt; Integer, String &gt; () &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">apply</span><span class="params">(Integer integer)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;I&#x27;m &quot;</span> + integer;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;)</span><br><span class="line">  .subscribeOn(Schedulers.newThread())</span><br><span class="line">  .observeOn(AndroidSchedulers.mainThread())</span><br><span class="line">  .subscribe(<span class="keyword">new</span> <span class="title class_">Consumer</span>&lt;String&gt;() &#123;</span><br><span class="line">      <span class="meta">@Override</span> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">accept</span><span class="params">(String s)</span> &#123;</span><br><span class="line">          System.out.println(s);</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;);</span><br></pre></td></tr></table></figure>
+
+<p>首先just方法会返回一个Flowable的子类对象FlowableFromArray,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.PASS_THROUGH)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.NONE)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> &lt;R&gt; Flowable&lt;R&gt; <span class="title function_">map</span><span class="params">(Function&lt;? <span class="built_in">super</span> T, ? extends R&gt; mapper)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onAssembly(<span class="keyword">new</span> <span class="title class_">FlowableMap</span>&lt;T, R&gt;(<span class="built_in">this</span>, mapper));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后map方法会返回另一个Flowable的子类对象FlowableMap,T是输入类型，R是输出类型。</p>
+<p>同样我们来看下FlowableMap的subscribeActual方法,暂时不考虑线程</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="built_in">super</span> U&gt; s)</span> &#123;<span class="comment">//LambdaSubscriber</span></span><br><span class="line">    <span class="keyword">if</span> (s <span class="keyword">instanceof</span> ConditionalSubscriber) &#123;</span><br><span class="line">        source.subscribe(<span class="keyword">new</span> <span class="title class_">MapConditionalSubscriber</span>&lt;T, U&gt;((ConditionalSubscriber&lt;? <span class="built_in">super</span> U&gt;)s, mapper));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        source.subscribe(<span class="keyword">new</span> <span class="title class_">MapSubscriber</span>&lt;T, U&gt;(s, mapper));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>source 是FlowableFromArray对象，mapper是map方法传入的Function， s是LambdaSubscriber，<br>所以这里调用的是FlowableFromArray的subscribe方法，即是Flowable的subscribe方法，这就和前一篇文章的类似。<br>只不过之前的FlowableFromArray直接Subscribe的是一个LambdaSubscriber,而这里是一个MapSubscriber对象，<br>所以会调用到FlowableFromArray的subscribeActual方法，又会调用到 s.onSubscribe(new ArraySubscription<T>(s, array));<br>这里的s就是MapSubscriber。也就是说map操作其实就是生成一个订阅者MapSubscriber取代了最终的订阅者LambdaSubscriber。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">onSubscribe</span><span class="params">(Subscription s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.validate(<span class="built_in">this</span>.upstream, s)) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">this</span>.upstream = s;<span class="comment">//s == new ArraySubscription&lt;T&gt;(this, array)</span></span><br><span class="line">        <span class="keyword">if</span> (s <span class="keyword">instanceof</span> QueueSubscription) &#123;<span class="comment">//true</span></span><br><span class="line">            <span class="built_in">this</span>.qs = (QueueSubscription&lt;T&gt;)s;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (beforeDownstream()) &#123;<span class="comment">//true</span></span><br><span class="line"></span><br><span class="line">            downstream.onSubscribe(<span class="built_in">this</span>);<span class="comment">//downstream == LambdaSubscriber</span></span><br><span class="line"></span><br><span class="line">            afterDownstream();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到实际上调用LambdaSubscriber的onSubscribe方法，传入的参数是MapSubscriber，也就是MapSubscriber同时也取代了原来的ArraySubscription。所以由原来的直接LambdaSubscriber.onSubscribe(ArraySubscription),变成了LambdaSubscriber.onSubscribe(MapSubscriber),而且MapSubscriber的upstream是ArraySubscription，downstream是LambdaSubscriber，同时ArraySubscription也持有MapSubscriber的引用。</p>
+<p>MapSubscriber.request</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">(<span class="type">long</span> n)</span> &#123;</span><br><span class="line">    upstream.request(n);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>向它的上游request，就是ArraySubscription.request,接着会调用MapSubscriber.onNext</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onNext</span><span class="params">(T t)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (done) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (sourceMode != NONE) &#123;</span><br><span class="line">        downstream.onNext(<span class="literal">null</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    U v;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        v = ObjectHelper.requireNonNull(mapper.apply(t), <span class="string">&quot;The mapper function returned a null value.&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">        fail(ex);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    downstream.onNext(v);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>mapper就是一开始传入的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> <span class="title class_">Function</span> &lt; Integer, String &gt; () &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">apply</span><span class="params">(Integer integer)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;I&#x27;m &quot;</span> + integer;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也就是经过map变换以后再将其传递到下游的onNext，也就是LambdaSubscriber的onNext就会打印出来。</p>
+<p>当中间有多个操作的时候，跟以上分析类似，只不过改变上下游而已，这个思路跟linux下面的重定向 “|”<br>类似，这一级的输出是下一级的输入，一级一级前后相连形成一条链。</p>
+<h2 id="切换线程"><a href="#切换线程" class="headerlink" title="切换线程"></a>切换线程</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.PASS_THROUGH)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.CUSTOM)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> Flowable&lt;T&gt; <span class="title function_">subscribeOn</span><span class="params">(<span class="meta">@NonNull</span> Scheduler scheduler)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> subscribeOn(scheduler, !(<span class="built_in">this</span> <span class="keyword">instanceof</span> FlowableCreate));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.PASS_THROUGH)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.CUSTOM)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> Flowable&lt;T&gt; <span class="title function_">subscribeOn</span><span class="params">(<span class="meta">@NonNull</span> Scheduler scheduler, <span class="type">boolean</span> requestOn)</span> &#123;<span class="comment">//true</span></span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onAssembly(<span class="keyword">new</span> <span class="title class_">FlowableSubscribeOn</span>&lt;T&gt;(<span class="built_in">this</span>, scheduler, requestOn));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>FlowableSubscribeOn持有source（也就是具体的Flowable）和Scheduler的引用，它的subscribeActual</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">subscribeActual</span><span class="params">(<span class="keyword">final</span> Subscriber&lt;? <span class="built_in">super</span> T&gt; s)</span> &#123;<span class="comment">//s == LambdaSubscriber</span></span><br><span class="line">    Scheduler.<span class="type">Worker</span> <span class="variable">w</span> <span class="operator">=</span> scheduler.createWorker();</span><br><span class="line">    <span class="keyword">final</span> SubscribeOnSubscriber&lt;T&gt; sos = <span class="keyword">new</span> <span class="title class_">SubscribeOnSubscriber</span>&lt;T&gt;(s, w, source, nonScheduledRequests);</span><br><span class="line">    s.onSubscribe(sos);</span><br><span class="line">    w.schedule(sos);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>暂时先不考虑observerOn，所以在subscribe的时候，会调用到FlowableSubscribeOn的subscribeActual，而传入的Subscriber就是LambdaSubscriber，也就是会调用到SubscribeOnSubscriber的request</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> n)</span> &#123;<span class="comment">//n == Long.MAX_VALUE</span></span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.validate(n)) &#123;</span><br><span class="line">        <span class="type">Subscription</span> <span class="variable">s</span> <span class="operator">=</span> <span class="built_in">this</span>.upstream.get();</span><br><span class="line">        <span class="keyword">if</span> (s != <span class="literal">null</span>) &#123;</span><br><span class="line">            requestUpstream(n, s);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            BackpressureHelper.add(requested, n);</span><br><span class="line">            s = <span class="built_in">this</span>.upstream.get();</span><br><span class="line">            <span class="keyword">if</span> (s != <span class="literal">null</span>) &#123;</span><br><span class="line">                <span class="type">long</span> <span class="variable">r</span> <span class="operator">=</span> requested.getAndSet(<span class="number">0L</span>);</span><br><span class="line">                <span class="keyword">if</span> (r != <span class="number">0L</span>) &#123;</span><br><span class="line">                    requestUpstream(r, s);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>upstream.get()在这时候是返回null的，所以实际上没有做什么操作，只是设置了requested &#x3D;&#x3D; Long.MAX_VALUE<br>然后看Worker</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Scheduler.<span class="type">Worker</span> <span class="variable">w</span> <span class="operator">=</span> scheduler.createWorker();</span><br></pre></td></tr></table></figure>
+<p>这里传入的scheduler是Schedulers的静态方法生成的Scheduler实例对象</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Scheduler <span class="title function_">newThread</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onNewThreadScheduler(NEW_THREAD);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Scheduler <span class="title function_">io</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onIoScheduler(IO);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Scheduler <span class="title function_">computation</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onComputationScheduler(COMPUTATION);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> <span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Scheduler SINGLE;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Scheduler COMPUTATION;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Scheduler IO;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Scheduler TRAMPOLINE;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Scheduler NEW_THREAD;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> &#123;</span><br><span class="line">    SINGLE = RxJavaPlugins.initSingleScheduler(<span class="keyword">new</span> <span class="title class_">SingleTask</span>());</span><br><span class="line"></span><br><span class="line">    COMPUTATION = RxJavaPlugins.initComputationScheduler(<span class="keyword">new</span> <span class="title class_">ComputationTask</span>());</span><br><span class="line"></span><br><span class="line">    IO = RxJavaPlugins.initIoScheduler(<span class="keyword">new</span> <span class="title class_">IOTask</span>());</span><br><span class="line"></span><br><span class="line">    TRAMPOLINE = TrampolineScheduler.instance();</span><br><span class="line"></span><br><span class="line">    NEW_THREAD = RxJavaPlugins.initNewThreadScheduler(<span class="keyword">new</span> <span class="title class_">NewThreadTask</span>());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">NewThreadTask</span> <span class="keyword">implements</span> <span class="title class_">Callable</span>&lt;Scheduler&gt; &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Scheduler <span class="title function_">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="keyword">return</span> NewThreadHolder.DEFAULT;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">NewThreadHolder</span> &#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Scheduler</span> <span class="variable">DEFAULT</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NewThreadScheduler</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Scheduler <span class="title function_">initNewThreadScheduler</span><span class="params">(<span class="meta">@NonNull</span> Callable&lt;Scheduler&gt; defaultScheduler)</span> &#123;</span><br><span class="line">    ObjectHelper.requireNonNull(defaultScheduler, <span class="string">&quot;Scheduler Callable can&#x27;t be null&quot;</span>);</span><br><span class="line">    Function&lt;? <span class="built_in">super</span> Callable&lt;Scheduler&gt;, ? <span class="keyword">extends</span> <span class="title class_">Scheduler</span>&gt; f = onInitNewThreadHandler;</span><br><span class="line">    <span class="keyword">if</span> (f == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> callRequireNonNull(defaultScheduler);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> applyRequireNonNull(f, defaultScheduler);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">static</span> Scheduler <span class="title function_">callRequireNonNull</span><span class="params">(<span class="meta">@NonNull</span> Callable&lt;Scheduler&gt; s)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> ObjectHelper.requireNonNull(s.call(), <span class="string">&quot;Scheduler Callable result can&#x27;t be null&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">        <span class="keyword">throw</span> ExceptionHelper.wrapOrThrow(ex);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们看到这些Scheduler实际上就是静态内部类方式实现的单例。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Worker <span class="title function_">createWorker</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">NewThreadWorker</span>(threadFactory);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">THREAD_FACTORY = <span class="keyword">new</span> <span class="title class_">RxThreadFactory</span>(THREAD_NAME_PREFIX, priority);</span><br></pre></td></tr></table></figure>
+
+<p>我们看到createWorker()方法返回了一个具体的Worker。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> ScheduledExecutorService executor;</span><br><span class="line"><span class="keyword">public</span> <span class="title function_">NewThreadWorker</span><span class="params">(ThreadFactory threadFactory)</span> &#123;</span><br><span class="line">        executor = SchedulerPoolFactory.create(threadFactory);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>NewThreadWorker持有一个ScheduledExecutorService引用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> ScheduledExecutorService <span class="title function_">create</span><span class="params">(ThreadFactory factory)</span> &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">ScheduledExecutorService</span> <span class="variable">exec</span> <span class="operator">=</span> Executors.newScheduledThreadPool(<span class="number">1</span>, factory);</span><br><span class="line">        tryPutIntoPool(PURGE_ENABLED, exec);</span><br><span class="line">        <span class="keyword">return</span> exec;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后我们接着看NewThreadWorker.schedule(SubscribeOnSubscriber)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Disposable <span class="title function_">schedule</span><span class="params">(<span class="meta">@NonNull</span> <span class="keyword">final</span> Runnable run)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> schedule(run, <span class="number">0</span>, <span class="literal">null</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Disposable <span class="title function_">schedule</span><span class="params">(<span class="meta">@NonNull</span> <span class="keyword">final</span> Runnable action, <span class="type">long</span> delayTime, <span class="meta">@NonNull</span> TimeUnit unit)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (disposed) &#123;</span><br><span class="line">        <span class="keyword">return</span> EmptyDisposable.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> scheduleActual(action, delayTime, unit, <span class="literal">null</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@NonNull</span></span><br><span class="line"><span class="keyword">public</span> ScheduledRunnable <span class="title function_">scheduleActual</span><span class="params">(<span class="keyword">final</span> Runnable run, <span class="type">long</span> delayTime, <span class="meta">@NonNull</span> TimeUnit unit, <span class="meta">@Nullable</span> DisposableContainer parent)</span> &#123;</span><br><span class="line">    <span class="type">Runnable</span> <span class="variable">decoratedRun</span> <span class="operator">=</span> RxJavaPlugins.onSchedule(run);</span><br><span class="line"></span><br><span class="line">    <span class="type">ScheduledRunnable</span> <span class="variable">sr</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ScheduledRunnable</span>(decoratedRun, parent);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (parent != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!parent.add(sr)) &#123;</span><br><span class="line">            <span class="keyword">return</span> sr;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Future&lt;?&gt; f;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (delayTime &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            f = executor.submit((Callable&lt;Object&gt;)sr);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            f = executor.schedule((Callable&lt;Object&gt;)sr, delayTime, unit);</span><br><span class="line">        &#125;</span><br><span class="line">        sr.setFuture(f);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RejectedExecutionException ex) &#123;</span><br><span class="line">        <span class="keyword">if</span> (parent != <span class="literal">null</span>) &#123;</span><br><span class="line">            parent.remove(sr);</span><br><span class="line">        &#125;</span><br><span class="line">        RxJavaPlugins.onError(ex);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> sr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们看到是在ScheduledExecutorService中执行ScheduledRunnable.call()</p>
+<p>也就是在线程池的线程中执行SubscribeOnSubscriber的run方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">    lazySet(Thread.currentThread());</span><br><span class="line">    Publisher&lt;T&gt; src = source;</span><br><span class="line">    source = <span class="literal">null</span>;</span><br><span class="line">    src.subscribe(<span class="built_in">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>FlowableMap.subscribe(SubscribeOnSubscriber),我们再回看一下FlowableMap的subscribe<br>就相当于FlowableFromArray.subscribe(MapSubscriber),又相当于，<br>MapSubscriber.onSubscribe(ArraySubscription),接着调用到SubscribeOnSubscriber.onSubscribe(MapSubscriber)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onSubscribe</span><span class="params">(Subscription s)</span> &#123;<span class="comment">//s == MapSubscriber</span></span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.setOnce(<span class="built_in">this</span>.upstream, s)) &#123;</span><br><span class="line">        <span class="type">long</span> <span class="variable">r</span> <span class="operator">=</span> requested.getAndSet(<span class="number">0L</span>);<span class="comment">//r == Long.MAX_VAULE</span></span><br><span class="line">        <span class="keyword">if</span> (r != <span class="number">0L</span>) &#123;</span><br><span class="line">            requestUpstream(r, s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> <span class="title function_">requestUpstream</span><span class="params">(<span class="keyword">final</span> <span class="type">long</span> n, <span class="keyword">final</span> Subscription s)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (nonScheduledRequests || Thread.currentThread() == get()) &#123;<span class="comment">//true</span></span><br><span class="line">        s.request(n);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        worker.schedule(<span class="keyword">new</span> <span class="title class_">Request</span>(s, n));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>又会调用MapSubscriber的request，然后有向它的上游request，这个之前已经分析过，只不过request实际执行的线程是subscribeOn指定的线程。</p>
+<p>如果没有observeOn(),那么onNext也会在request相同的线程中执行，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@CheckReturnValue</span></span><br><span class="line"><span class="meta">@BackpressureSupport(BackpressureKind.FULL)</span></span><br><span class="line"><span class="meta">@SchedulerSupport(SchedulerSupport.CUSTOM)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> Flowable&lt;T&gt; <span class="title function_">observeOn</span><span class="params">(Scheduler scheduler, <span class="type">boolean</span> delayError, <span class="type">int</span> bufferSize)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> RxJavaPlugins.onAssembly(<span class="keyword">new</span> <span class="title class_">FlowableObserveOn</span>&lt;T&gt;(<span class="built_in">this</span>, scheduler, delayError, bufferSize));</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>调用observeOn会将Flowable变成FlowableObserveOn，然后它去subscribeActrual(LambdaSubscriber)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">subscribeActual</span><span class="params">(Subscriber&lt;? <span class="built_in">super</span> T&gt; s)</span> &#123;</span><br><span class="line">    <span class="type">Worker</span> <span class="variable">worker</span> <span class="operator">=</span> scheduler.createWorker();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (s <span class="keyword">instanceof</span> ConditionalSubscriber) &#123;</span><br><span class="line">        source.subscribe(<span class="keyword">new</span> <span class="title class_">ObserveOnConditionalSubscriber</span>&lt;T&gt;(</span><br><span class="line">                (ConditionalSubscriber&lt;? <span class="built_in">super</span> T&gt;) s, worker, delayError, prefetch));</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        source.subscribe(<span class="keyword">new</span> <span class="title class_">ObserveOnSubscriber</span>&lt;T&gt;(s, worker, delayError, prefetch));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的source是上一级的Flowable，也就是FlowableSubscribeOn，相当于<br>FlowableSubscribeOn.subscribeActual(ObserveOnSubscriber)<br>相当于ObserveOnSubscriber.onSubscribe(SubscribeOnSubscriber)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onSubscribe</span><span class="params">(Subscription s)</span> &#123;<span class="comment">//SubscribeOnSubscriber</span></span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.validate(<span class="built_in">this</span>.upstream, s)) &#123;</span><br><span class="line">        <span class="built_in">this</span>.upstream = s;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (s <span class="keyword">instanceof</span> QueueSubscription) &#123;<span class="comment">//false</span></span><br><span class="line">            <span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line">            QueueSubscription&lt;T&gt; f = (QueueSubscription&lt;T&gt;) s;</span><br><span class="line"></span><br><span class="line">            <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> f.requestFusion(ANY | BOUNDARY);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (m == SYNC) &#123;</span><br><span class="line">                sourceMode = SYNC;</span><br><span class="line">                queue = f;</span><br><span class="line">                done = <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">                downstream.onSubscribe(<span class="built_in">this</span>);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">if</span> (m == ASYNC) &#123;</span><br><span class="line">                sourceMode = ASYNC;</span><br><span class="line">                queue = f;</span><br><span class="line"></span><br><span class="line">                downstream.onSubscribe(<span class="built_in">this</span>);</span><br><span class="line"></span><br><span class="line">                s.request(prefetch);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        queue = <span class="keyword">new</span> <span class="title class_">SpscArrayQueue</span>&lt;T&gt;(prefetch);<span class="comment">//128</span></span><br><span class="line"></span><br><span class="line">        downstream.onSubscribe(<span class="built_in">this</span>);</span><br><span class="line"></span><br><span class="line">        s.request(prefetch);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>ObserbeOnSubscriber.request(Long.MAX_VALUE)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">(<span class="type">long</span> n)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (SubscriptionHelper.validate(n)) &#123;</span><br><span class="line">        BackpressureHelper.add(requested, n);</span><br><span class="line">        trySchedule();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">trySchedule</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (getAndIncrement() != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    worker.schedule(<span class="built_in">this</span>);<span class="comment">//在observeOn指定的线程执行</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (outputFused) &#123;</span><br><span class="line">        runBackfused();</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (sourceMode == SYNC) &#123;</span><br><span class="line">        runSync();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        runAsync();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>通过分析，我们知道Flowable在subscribe之后，会触发Subscriber的onSubscribe，然后会调用Subscription的request,然后会调用Subscriber的onNext。这是只有一个发布者和一个订阅者的情况，在中间增加多个操作也是类似的情况，想象有一个水源，通过一根管道连接到目的地去处理，可以在中间增加多级中间处理，每一级都是作为上一级的订阅者，下一级的发布者，subscribeOn和observeOn也同样是增加了中间处理单元，不过可以使实际的操作在不同的线程中执行，这些线程都是由线程池提供的。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/RxJava2/" rel="tag"># RxJava2</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/09/18/RxJava2-%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB2/" rel="prev" title="RxJava2 源码阅读2">
+                  <i class="fa fa-angle-left"></i> RxJava2 源码阅读2
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/09/23/Glide%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" rel="next" title="Glide源码阅读">
+                  Glide源码阅读 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="default">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha256-yIDrPSXHZdOZhAqiBP7CKzIwMQmRCJ8UeB8Jo17YC4o=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.19.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"بحث...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="本文主要分析android.view.animation.Animation及其相关类的源码。 umlAnimation UML 一个例子1234567891011121314151617181920212223242526272829303132&lt;set android:shareInterpolator&#x3D;&quot;false&quot;&gt;    &lt;scale">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Animation源码阅读">
+<meta property="og:url" content="http://example.com/2018/10/07/Animation%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/index.html">
+<meta property="og:site_name" content="Something">
+<meta property="og:description" content="本文主要分析android.view.animation.Animation及其相关类的源码。 umlAnimation UML 一个例子1234567891011121314151617181920212223242526272829303132&lt;set android:shareInterpolator&#x3D;&quot;false&quot;&gt;    &lt;scale">
+<meta property="og:locale">
+<meta property="article:published_time" content="2018-10-07T05:12:11.000Z">
+<meta property="article:modified_time" content="2018-10-07T08:26:35.134Z">
+<meta property="article:author" content="Guo Xf">
+<meta property="article:tag" content="Android Animation">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2018/10/07/Animation%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"default","comments":true,"permalink":"http://example.com/2018/10/07/Animation%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/","path":"2018/10/07/Animation源码阅读/","title":"Animation源码阅读"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Animation源码阅读 | Something</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="تشغيل شريط التصفح" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Something</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="بحث" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          المحتويات
+        </li>
+        <li class="sidebar-nav-overview">
+          عام
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#uml"><span class="nav-number">1.</span> <span class="nav-text">uml</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">2.</span> <span class="nav-text">一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E8%BF%BD%E6%BA%AF"><span class="nav-number">3.</span> <span class="nav-text">源码追溯</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Guo Xf</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-name">المقالات</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">الوسوم</span>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="default">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2018/10/07/Animation%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Guo Xf">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Something">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Animation源码阅读 | Something">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Animation源码阅读
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">نُشر في</span>
+      
+
+      <time title="أُنشأ: 2018-10-07 13:12:11 / عُدل: 16:26:35" itemprop="dateCreated datePublished" datetime="2018-10-07T13:12:11+08:00">2018-10-07</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>本文主要分析android.view.animation.Animation及其相关类的源码。</p>
+<h2 id="uml"><a href="#uml" class="headerlink" title="uml"></a>uml</h2><p><a target="_blank" rel="noopener" href="http://www.plantuml.com/plantuml/svg/5Sin3i8m34RXlQSe5uY1WO6fLp6fQIqbJcN_5XoVCZtfITyIO4VsDbtKQijLqjky0qSyYPm_PLFi-SeGhyCWXb97fot7zts_tXvqd3YeSq2SsBGpT5ZvxsaHMy_-0000">Animation UML</a></p>
+<h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">set</span> <span class="attr">android:shareInterpolator</span>=<span class="string">&quot;false&quot;</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">scale</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:interpolator</span>=<span class="string">&quot;@android:anim/accelerate_decelerate_interpolator&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:fromXScale</span>=<span class="string">&quot;1.0&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:toXScale</span>=<span class="string">&quot;1.4&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:fromYScale</span>=<span class="string">&quot;1.0&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:toYScale</span>=<span class="string">&quot;0.6&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:pivotX</span>=<span class="string">&quot;50%&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:pivotY</span>=<span class="string">&quot;50%&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:fillAfter</span>=<span class="string">&quot;false&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:duration</span>=<span class="string">&quot;700&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">set</span> <span class="attr">android:interpolator</span>=<span class="string">&quot;@android:anim/decelerate_interpolator&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">scale</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:fromXScale</span>=<span class="string">&quot;1.4&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:toXScale</span>=<span class="string">&quot;0.0&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:fromYScale</span>=<span class="string">&quot;0.6&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:toYScale</span>=<span class="string">&quot;0.0&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:pivotX</span>=<span class="string">&quot;50%&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:pivotY</span>=<span class="string">&quot;50%&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:startOffset</span>=<span class="string">&quot;700&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:duration</span>=<span class="string">&quot;400&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:fillBefore</span>=<span class="string">&quot;false&quot;</span> /&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">rotate</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:fromDegrees</span>=<span class="string">&quot;0&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:toDegrees</span>=<span class="string">&quot;-45&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:toYScale</span>=<span class="string">&quot;0.0&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:pivotX</span>=<span class="string">&quot;50%&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:pivotY</span>=<span class="string">&quot;50%&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:startOffset</span>=<span class="string">&quot;700&quot;</span></span></span><br><span class="line"><span class="tag">           <span class="attr">android:duration</span>=<span class="string">&quot;400&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">set</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">set</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">ImageView</span> <span class="variable">spaceshipImage</span> <span class="operator">=</span> (ImageView) findViewById(R.id.spaceshipImage);</span><br><span class="line"><span class="type">Animation</span> <span class="variable">hyperspaceJumpAnimation</span> <span class="operator">=</span> AnimationUtils.loadAnimation(<span class="built_in">this</span>, R.anim.hyperspace_jump);</span><br><span class="line">spaceshipImage.startAnimation(hyperspaceJumpAnimation);</span><br></pre></td></tr></table></figure>
+
+<h2 id="源码追溯"><a href="#源码追溯" class="headerlink" title="源码追溯"></a>源码追溯</h2><p>View的startAnimation方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">startAnimation</span><span class="params">(Animation animation)</span> &#123;</span><br><span class="line">        animation.setStartTime(Animation.START_ON_FIRST_FRAME);</span><br><span class="line">        setAnimation(animation);</span><br><span class="line">        invalidateParentCaches();</span><br><span class="line">        invalidate(<span class="literal">true</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>Animation的setStartTime</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setStartTime</span><span class="params">(<span class="type">long</span> startTimeMillis)</span> &#123;</span><br><span class="line">        mStartTime = startTimeMillis;</span><br><span class="line">        mStarted = mEnded = <span class="literal">false</span>;</span><br><span class="line">        mCycleFlip = <span class="literal">false</span>;</span><br><span class="line">        mRepeated = <span class="number">0</span>;</span><br><span class="line">        mMore = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>View的setAnimation</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setAnimation</span><span class="params">(Animation animation)</span> &#123;</span><br><span class="line">        mCurrentAnimation = animation;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (animation != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="comment">// If the screen is off assume the animation start time is now instead of</span></span><br><span class="line">            <span class="comment">// the next frame we draw. Keeping the START_ON_FIRST_FRAME start time</span></span><br><span class="line">            <span class="comment">// would cause the animation to start when the screen turns back on</span></span><br><span class="line">            <span class="keyword">if</span> (mAttachInfo != <span class="literal">null</span> &amp;&amp; mAttachInfo.mDisplayState == Display.STATE_OFF</span><br><span class="line">                    &amp;&amp; animation.getStartTime() == Animation.START_ON_FIRST_FRAME) &#123;</span><br><span class="line">                animation.setStartTime(AnimationUtils.currentAnimationTimeMillis());</span><br><span class="line">            &#125;</span><br><span class="line">            animation.reset();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>View的invalidate方法最后会触发ViewRootImpl的performTraversals，这个方法超级长</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">performTraversals</span><span class="params">()</span> &#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>这个方法遍历View执行测量、布局、绘制流程，我们只看跟动画有关的绘制流程。<br>通过ViewGroup的dispatchDraw调用child的draw</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">boolean</span> <span class="title function_">draw</span><span class="params">(Canvas canvas, ViewGroup parent, <span class="type">long</span> drawingTime)</span> &#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">Animation</span> <span class="variable">a</span> <span class="operator">=</span> getAnimation();</span><br><span class="line">       <span class="keyword">if</span> (a != <span class="literal">null</span>) &#123;</span><br><span class="line">           more = applyLegacyAnimation(parent, drawingTime, a, scalingRequired);</span><br><span class="line">           concatMatrix = a.willChangeTransformationMatrix();</span><br><span class="line">           <span class="keyword">if</span> (concatMatrix) &#123;</span><br><span class="line">               mPrivateFlags3 |= PFLAG3_VIEW_IS_ANIMATING_TRANSFORM;</span><br><span class="line">           &#125;</span><br><span class="line">           transformToApply = parent.getChildTransformation();</span><br><span class="line">       &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">           </span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">applyLegacyAnimation</span><span class="params">(ViewGroup parent, <span class="type">long</span> drawingTime,</span></span><br><span class="line"><span class="params">        Animation a, <span class="type">boolean</span> scalingRequired)</span> &#123;</span><br><span class="line">    Transformation invalidationTransform;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">int</span> <span class="variable">flags</span> <span class="operator">=</span> parent.mGroupFlags;</span><br><span class="line">    <span class="keyword">final</span> <span class="type">boolean</span> <span class="variable">initialized</span> <span class="operator">=</span> a.isInitialized();</span><br><span class="line">    <span class="keyword">if</span> (!initialized) &#123;</span><br><span class="line">        a.initialize(mRight - mLeft, mBottom - mTop, parent.getWidth(), parent.getHeight());</span><br><span class="line">        a.initializeInvalidateRegion(<span class="number">0</span>, <span class="number">0</span>, mRight - mLeft, mBottom - mTop);</span><br><span class="line">        <span class="keyword">if</span> (mAttachInfo != <span class="literal">null</span>) a.setListenerHandler(mAttachInfo.mHandler);</span><br><span class="line">        onAnimationStart();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> <span class="type">Transformation</span> <span class="variable">t</span> <span class="operator">=</span> parent.getChildTransformation();</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">more</span> <span class="operator">=</span> a.getTransformation(drawingTime, t, <span class="number">1f</span>);</span><br><span class="line">    <span class="keyword">if</span> (scalingRequired &amp;&amp; mAttachInfo.mApplicationScale != <span class="number">1f</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (parent.mInvalidationTransformation == <span class="literal">null</span>) &#123;</span><br><span class="line">            parent.mInvalidationTransformation = <span class="keyword">new</span> <span class="title class_">Transformation</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        invalidationTransform = parent.mInvalidationTransformation;</span><br><span class="line">        a.getTransformation(drawingTime, invalidationTransform, <span class="number">1f</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        invalidationTransform = t;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (more) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!a.willChangeBounds()) &#123;</span><br><span class="line">            <span class="keyword">if</span> ((flags &amp; (ViewGroup.FLAG_OPTIMIZE_INVALIDATE | ViewGroup.FLAG_ANIMATION_DONE)) ==</span><br><span class="line">                    ViewGroup.FLAG_OPTIMIZE_INVALIDATE) &#123;</span><br><span class="line">                parent.mGroupFlags |= ViewGroup.FLAG_INVALIDATE_REQUIRED;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> ((flags &amp; ViewGroup.FLAG_INVALIDATE_REQUIRED) == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="comment">// The child need to draw an animation, potentially offscreen, so</span></span><br><span class="line">                <span class="comment">// make sure we do not cancel invalidate requests</span></span><br><span class="line">                parent.mPrivateFlags |= PFLAG_DRAW_ANIMATION;</span><br><span class="line">                parent.invalidate(mLeft, mTop, mRight, mBottom);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (parent.mInvalidateRegion == <span class="literal">null</span>) &#123;</span><br><span class="line">                parent.mInvalidateRegion = <span class="keyword">new</span> <span class="title class_">RectF</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">final</span> <span class="type">RectF</span> <span class="variable">region</span> <span class="operator">=</span> parent.mInvalidateRegion;</span><br><span class="line">            a.getInvalidateRegion(<span class="number">0</span>, <span class="number">0</span>, mRight - mLeft, mBottom - mTop, region,</span><br><span class="line">                    invalidationTransform);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// The child need to draw an animation, potentially offscreen, so</span></span><br><span class="line">            <span class="comment">// make sure we do not cancel invalidate requests</span></span><br><span class="line">            parent.mPrivateFlags |= PFLAG_DRAW_ANIMATION;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">final</span> <span class="type">int</span> <span class="variable">left</span> <span class="operator">=</span> mLeft + (<span class="type">int</span>) region.left;</span><br><span class="line">            <span class="keyword">final</span> <span class="type">int</span> <span class="variable">top</span> <span class="operator">=</span> mTop + (<span class="type">int</span>) region.top;</span><br><span class="line">            parent.invalidate(left, top, left + (<span class="type">int</span>) (region.width() + <span class="number">.5f</span>),</span><br><span class="line">                    top + (<span class="type">int</span>) (region.height() + <span class="number">.5f</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> more;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>View的applyLegacyAnimation会调用Animation的getTransformation</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">getTransformation</span><span class="params">(<span class="type">long</span> currentTime, Transformation outTransformation)</span> &#123;</span><br><span class="line">       <span class="keyword">if</span> (mStartTime == -<span class="number">1</span>) &#123;</span><br><span class="line">           mStartTime = currentTime;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">final</span> <span class="type">long</span> <span class="variable">startOffset</span> <span class="operator">=</span> getStartOffset();</span><br><span class="line">       <span class="keyword">final</span> <span class="type">long</span> <span class="variable">duration</span> <span class="operator">=</span> mDuration;</span><br><span class="line">       <span class="type">float</span> normalizedTime;</span><br><span class="line">       <span class="keyword">if</span> (duration != <span class="number">0</span>) &#123;</span><br><span class="line">           normalizedTime = ((<span class="type">float</span>) (currentTime - (mStartTime + startOffset))) /</span><br><span class="line">                   (<span class="type">float</span>) duration;</span><br><span class="line">       &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">           <span class="comment">// time is a step-change with a zero duration</span></span><br><span class="line">           normalizedTime = currentTime &lt; mStartTime ? <span class="number">0.0f</span> : <span class="number">1.0f</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">final</span> <span class="type">boolean</span> <span class="variable">expired</span> <span class="operator">=</span> normalizedTime &gt;= <span class="number">1.0f</span> || isCanceled();</span><br><span class="line">       mMore = !expired;<span class="comment">//是否结束</span></span><br><span class="line"></span><br><span class="line">       <span class="keyword">if</span> (!mFillEnabled) normalizedTime = Math.max(Math.min(normalizedTime, <span class="number">1.0f</span>), <span class="number">0.0f</span>);</span><br><span class="line"></span><br><span class="line">       <span class="keyword">if</span> ((normalizedTime &gt;= <span class="number">0.0f</span> || mFillBefore) &amp;&amp; (normalizedTime &lt;= <span class="number">1.0f</span> || mFillAfter)) &#123;</span><br><span class="line">           <span class="keyword">if</span> (!mStarted) &#123;</span><br><span class="line">               fireAnimationStart();</span><br><span class="line">               mStarted = <span class="literal">true</span>;</span><br><span class="line">               <span class="keyword">if</span> (NoImagePreloadHolder.USE_CLOSEGUARD) &#123;</span><br><span class="line">                   guard.open(<span class="string">&quot;cancel or detach or getTransformation&quot;</span>);</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">if</span> (mFillEnabled) normalizedTime = Math.max(Math.min(normalizedTime, <span class="number">1.0f</span>), <span class="number">0.0f</span>);</span><br><span class="line"></span><br><span class="line">           <span class="keyword">if</span> (mCycleFlip) &#123;</span><br><span class="line">               normalizedTime = <span class="number">1.0f</span> - normalizedTime;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">final</span> <span class="type">float</span> <span class="variable">interpolatedTime</span> <span class="operator">=</span> mInterpolator.getInterpolation(normalizedTime);<span class="comment">//这里就是Interpolator起作用的地方</span></span><br><span class="line">           applyTransformation(interpolatedTime, outTransformation);</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">if</span> (expired) &#123;<span class="comment">//结束</span></span><br><span class="line">           <span class="keyword">if</span> (mRepeatCount == mRepeated || isCanceled()) &#123;</span><br><span class="line">               <span class="keyword">if</span> (!mEnded) &#123;</span><br><span class="line">                   mEnded = <span class="literal">true</span>;</span><br><span class="line">                   guard.close();</span><br><span class="line">                   fireAnimationEnd();</span><br><span class="line">               &#125;</span><br><span class="line">           &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">               <span class="keyword">if</span> (mRepeatCount &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                   mRepeated++;</span><br><span class="line">               &#125;</span><br><span class="line"></span><br><span class="line">               <span class="keyword">if</span> (mRepeatMode == REVERSE) &#123;</span><br><span class="line">                   mCycleFlip = !mCycleFlip;</span><br><span class="line">               &#125;</span><br><span class="line"></span><br><span class="line">               mStartTime = -<span class="number">1</span>;</span><br><span class="line">               mMore = <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">               fireAnimationRepeat();</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">if</span> (!mMore &amp;&amp; mOneMoreTime) &#123;</span><br><span class="line">           mOneMoreTime = <span class="literal">false</span>;</span><br><span class="line">           <span class="keyword">return</span> <span class="literal">true</span>;<span class="comment">//没有结束返回true</span></span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">return</span> mMore;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>然后会调用applyTransformation，这个方法设置Transformation的Matrix，这里的outTransformation就是ViewGroup的mChildTransformation。<br>应用Matrix</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (transformToApply != <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (concatMatrix) &#123;</span><br><span class="line">        <span class="keyword">if</span> (drawingWithRenderNode) &#123;</span><br><span class="line">            renderNode.setAnimationMatrix(transformToApply.getMatrix());</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// Undo the scroll translation, apply the transformation matrix,</span></span><br><span class="line">            <span class="comment">// then redo the scroll translate to get the correct result.</span></span><br><span class="line">            canvas.translate(-transX, -transY);</span><br><span class="line">            canvas.concat(transformToApply.getMatrix());</span><br><span class="line">            canvas.translate(transX, transY);</span><br><span class="line">        &#125;</span><br><span class="line">        parent.mGroupFlags |= ViewGroup.FLAG_CLEAR_TRANSFORMATION;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">float</span> <span class="variable">transformAlpha</span> <span class="operator">=</span> transformToApply.getAlpha();</span><br><span class="line">    <span class="keyword">if</span> (transformAlpha &lt; <span class="number">1</span>) &#123;</span><br><span class="line">        alpha *= transformAlpha;</span><br><span class="line">        parent.mGroupFlags |= ViewGroup.FLAG_CLEAR_TRANSFORMATION;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Animation的getTransformation返回true表示动画没有结束，会再次出发遍历View并重新绘制，在下一次同步信号到来时，也就会再一次改变Transformation的Matrix，然后再应用Matrix。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>Animation的关键就是View每一帧会应用Transformation的Matrix，而每一帧的视图遍历会通过Animation的getTransformation方法改变Transformation的Matrix，这就形成了动画。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Android-Animation/" rel="tag"># Android Animation</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/09/24/Glide%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB2/" rel="prev" title="Glide源码阅读2">
+                  <i class="fa fa-angle-left"></i> Glide源码阅读2
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/10/22/Animator%E6%BA%90%E7%A0%81%E9%98%85%E8%AF%BB/" rel="next" title="Animator源码阅读">
+                  Animator源码阅读 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2023</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Guo Xf</span>
+  </div>
+  <div class="powered-by">تطبيق الموقع <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
